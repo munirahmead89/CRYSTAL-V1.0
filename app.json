@@ -1,0 +1,93 @@
+{
+  "expo": {
+    "name": "Crystal Messenger",
+    "slug": "crystal-messenger",
+    "version": "1.0.1",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#000000"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.crystal.messenger",
+      "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": false
+        },
+        "NSCameraUsageDescription": "Crystal Messenger needs access to your camera to send photos and videos.",
+        "NSMicrophoneUsageDescription": "Crystal Messenger needs access to your microphone to send voice messages.",
+        "NSPhotoLibraryUsageDescription": "Crystal Messenger needs access to your photo library to send images.",
+        "NSContactsUsageDescription": "Crystal Messenger needs access to your contacts to find friends.",
+        "UIBackgroundModes": [
+          "remote-notification"
+        ]
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#000000",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "package": "com.crystal.messenger",
+      "versionCode": 2,
+      "predictiveBackGestureEnabled": true,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.READ_CONTACTS",
+        "android.permission.INTERNET",
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.WAKE_LOCK",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_DATA_SYNC",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.VIBRATE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "updates": {
+      "enabled": true,
+      "fallbackToCacheTimeout": 0,
+      "runtimeVersion": {
+        "policy": "appVersion"
+      },
+      "url": "https://u.expo.dev/95627e57-7e7c-488b-b30d-77129a8a2797"
+    },
+    "scheme": "crystal-messenger",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "color": "#00A884"
+        }
+      ],
+      "expo-image-picker"
+    ],
+    "experiments": {
+      "typedRoutes": false
+    },
+    "extra": {
+      "eas": {
+        "projectId": "95627e57-7e7c-488b-b30d-77129a8a2797"
+      },
+      "router": {}
+    },
+    "owner": "munirwaheed786"
+  }
+}
