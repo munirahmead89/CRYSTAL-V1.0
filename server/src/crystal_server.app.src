@@ -1,0 +1,20 @@
+%% ===================================================================
+%% crystal_server.app.src - OTP application metadata
+%% ===================================================================
+{application, crystal_server, [
+    {description, "Crystal Messenger real-time server (WebSocket messaging, presence and call signaling)"},
+    {vsn, "1.0.0"},
+    {registered, []},
+    {mod, {crystal_app, []}},
+    {applications, [
+        kernel,
+        stdlib,
+        cowboy,
+        jsone
+    ]},
+    {env, []},
+    {modules, []},
+
+    {licenses, ["MIT"]},
+    {links, []}
+]}.

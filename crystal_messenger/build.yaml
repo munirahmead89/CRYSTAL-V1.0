@@ -1,0 +1,13 @@
+targets:
+  $default:
+    builders:
+      freezed:
+        options:
+          custom: false
+      json_serializable:
+        options:
+          any_map: false
+          checked: true
+      drift_dev:
+        options:
+          write_from_json_string_constructor: true

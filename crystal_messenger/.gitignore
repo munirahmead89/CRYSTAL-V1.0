@@ -1,0 +1,32 @@
+# Flutter/Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+build/
+flutter_*.png
+*.iml
+*.keystore
+*.jks
+**/*.freezed.dart
+**/*.g.dart
+**/*.config.dart
+**/generated_plugin_registrant.dart
+
+# Env
+.env
+.env.*
+
+# Native config (keep tracked versions but ignore local overrides)
+android/.gradle/
+android/local.properties
+ios/Runner/GoogleService-Info.plist
+android/app/google-services.json
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
