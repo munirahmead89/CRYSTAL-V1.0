@@ -66,11 +66,11 @@ class QrCodeScreen extends ConsumerWidget {
                 size: 200,
                 backgroundColor: Colors.white,
                 eyeStyle: const QrEyeStyle(
-                  eyeShape: QrEyeShape.roundedOuter,
+                  eyeShape: QrEyeShape.square,
                   color: AppColors.primary,
                 ),
                 dataModuleStyle: const QrDataModuleStyle(
-                  dataModuleShape: QrDataModuleShape.roundedOuter,
+                  dataModuleShape: QrDataModuleShape.square,
                   color: AppColors.surface,
                 ),
               ),

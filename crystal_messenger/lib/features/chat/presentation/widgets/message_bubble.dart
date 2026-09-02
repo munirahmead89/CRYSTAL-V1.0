@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:clipboard/clipboard.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../shared/widgets/message_status_light.dart';
 import '../providers/reactions_provider.dart';
 import '../providers/starred_provider.dart';
 import 'media_message_bubble.dart';
@@ -35,6 +36,14 @@ class MessageBubble extends ConsumerWidget {
     final replyTo = message['reply_to'] as Map<String, dynamic>?;
     final hasRead = message['read_at'] != null;
     final hasDelivered = message['delivered_at'] != null;
+
+    final trafficLight = isMe
+        ? (hasRead
+            ? MessageTrafficLight.viewed
+            : hasDelivered
+                ? MessageTrafficLight.delivered
+                : MessageTrafficLight.sent)
+        : null;
     final messageId = message['id'] as String;
     final reactions = ref.watch(reactionsProvider(messageId));
     final starred = ref.watch(messageStarredProvider(messageId));
@@ -84,9 +93,14 @@ class MessageBubble extends ConsumerWidget {
                       children: [
                         if (createdAt != null)
                           Text(DateFormat('HH:mm').format(createdAt), style: TextStyle(fontSize: 11, color: isMe ? Colors.white54 : AppColors.textTertiary)),
-                        if (isMe)
-                          Icon(hasRead ? Icons.done_all : Icons.done, size: 16, color: hasRead ? AppColors.secondary : Colors.white54),
-                        if (starred) const Icon(Icons.star, size: 12, color: Colors.white54),
+                        if (trafficLight != null) ...[
+                          const SizedBox(width: 4),
+                          MessageStatusLight(status: trafficLight),
+                        ],
+                        if (starred) ...[
+                          const SizedBox(width: 4),
+                          const Icon(Icons.star, size: 12, color: Colors.white54),
+                        ],
                       ],
                     ),
                   ],

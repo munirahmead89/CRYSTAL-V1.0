@@ -34,7 +34,7 @@ class MediaUrlResolver {
 
       final signedUrl = await _supabase.storage
           .from(bucket)
-          .createSignedUrl(path, const Duration(hours: 1));
+          .createSignedUrl(path, 3600);
 
       _cache[reference] = _CachedUrl(
         url: signedUrl,

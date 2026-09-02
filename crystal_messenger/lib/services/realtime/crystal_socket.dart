@@ -84,6 +84,23 @@ class CrystalSocket extends StateNotifier<SocketStatus> {
 
       if (event.type == 'pong') return; // heartbeat response
 
+      // Server confirmed our auth — we are now live
+      if (event.type == 'welcome') {
+        state = SocketStatus.online;
+        _reconnectAttempts = 0;
+        Logger.info('CrystalSocket', 'Authenticated — socket is online');
+        return;
+      }
+
+      // Server rejected our auth — close and retry
+      if (event.type == 'error') {
+        Logger.error('CrystalSocket', 'Server error: ${event.data['reason']}');
+        _channel?.sink.close();
+        state = SocketStatus.offline;
+        _scheduleReconnect();
+        return;
+      }
+
       Logger.debug('CrystalSocket', 'Received: ${event.type}');
       _eventController.add(event);
     } catch (e) {

@@ -7,7 +7,6 @@ import '../../providers/supabase_provider.dart';
 class PresenceService {
   final SupabaseClient _supabase;
   Timer? _heartbeatTimer;
-  bool _isOnline = false;
 
   PresenceService(this._supabase);
 
@@ -29,7 +28,6 @@ class PresenceService {
       final userId = _supabase.auth.currentUser?.id;
       if (userId == null) return;
 
-      _isOnline = isOnline;
       await _supabase.from('profiles').update({
         'is_online': isOnline,
         'last_seen': DateTime.now().toIso8601String(),

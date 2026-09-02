@@ -18,7 +18,7 @@ class PrivacyScreen extends ConsumerWidget {
         children: [
           const SizedBox(height: 16),
           SettingSwitch(
-            icon: Icons.done_all,
+            icon: Icons.traffic,
             title: 'Read Receipts',
             subtitle: 'Show when you\'ve read messages',
             value: settings.readReceipts,

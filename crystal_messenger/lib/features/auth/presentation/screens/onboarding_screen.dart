@@ -249,7 +249,7 @@ class OnboardingScreen extends ConsumerWidget {
       await ref.read(authProvider.notifier).completeOnboarding(
             fullName: onboarding.fullName,
             phone: onboarding.phone,
-            avatarPath: onboarding.avatarPath,
+            avatarUrl: onboarding.avatarPath,
           );
       if (context.mounted) context.go('/permissions');
     } catch (e) {

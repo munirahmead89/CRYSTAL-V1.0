@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'user_profile.dart';
 
 part 'chat.freezed.dart';
 part 'chat.g.dart';
@@ -22,15 +23,4 @@ class Chat with _$Chat {
   }) = _Chat;
 
   factory Chat.fromJson(Map<String, dynamic> json) => _$ChatFromJson(json);
-}
-
-// Need to import UserProfile or define it inline
-// For now, define a minimal version
-@freezed
-class _UserProfile with _$_UserProfile {
-  const factory _UserProfile({
-    required String id,
-    String? fullName,
-    String? avatarUrl,
-  }) = _UserProfile;
 }

@@ -9,6 +9,7 @@ part 'contacts_provider.freezed.dart';
 class ContactsState with _$ContactsState {
   const factory ContactsState({
     @Default([]) List<Map<String, dynamic>> contacts,
+    @Default([]) List<Map<String, dynamic>> deviceContacts,
     @Default(false) bool isLoading,
     String? error,
   }) = _ContactsState;
@@ -77,12 +78,58 @@ class ContactsNotifier extends StateNotifier<ContactsState> {
     }
   }
 
+  Future<void> toggleBlock(String contactId, bool current) =>
+      blockContact(contactId, current);
+
   Future<void> removeContact(String contactId) async {
     try {
       await _supabase.from('contacts').delete().eq('id', contactId);
       await loadContacts();
     } catch (e) {
       state = state.copyWith(error: e.toString());
+    }
+  }
+
+  Future<void> searchByPhone(String query) async {
+    try {
+      final result = await _supabase.rpc('search_user_by_phone', params: {
+        'phone_number': query,
+      });
+      if (result != null && result.isNotEmpty) {
+        final contact = Map<String, dynamic>.from(result);
+        state = state.copyWith(deviceContacts: [contact], error: null);
+      } else {
+        state = state.copyWith(deviceContacts: const [], error: null);
+      }
+    } catch (e) {
+      state = state.copyWith(error: e.toString(), deviceContacts: const []);
+    }
+  }
+
+  Future<Map<String, dynamic>?> addContact(String contactId) async {
+    try {
+      final found = state.deviceContacts.where((c) => c['id'] == contactId);
+      if (found.isEmpty) {
+        final result = await _supabase.rpc('search_user_by_phone', params: {
+          'phone_number': contactId,
+        });
+        _supabase.from('contacts').insert({
+          'user_id': _supabase.auth.currentUser!.id,
+          'contact_id': result['id'],
+          'display_name': result['full_name'],
+        });
+      } else {
+        await _supabase.from('contacts').insert({
+          'user_id': _supabase.auth.currentUser!.id,
+          'contact_id': found.first['id'],
+          'display_name': found.first['full_name'],
+        });
+      }
+      await loadContacts();
+      return found.isNotEmpty ? Map<String, dynamic>.from(found.first) : null;
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+      return null;
     }
   }
 

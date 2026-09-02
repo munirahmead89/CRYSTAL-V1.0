@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../../providers/supabase_provider.dart';
 
 part 'auth_provider.freezed.dart';
 
@@ -15,7 +16,6 @@ class AuthState with _$AuthState {
     @Default(false) bool isInitialized,
     String? error,
   }) = _AuthState;
-
 }
 
 class AuthNotifier extends StateNotifier<AuthState> {
@@ -40,7 +40,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
           isInitialized: true,
         );
       } else {
-        state = const AuthState.unauthenticated();
+        state = const AuthState(isAuthenticated: false, isLoading: false, isOnboarded: false, isInitialized: true);
       }
 
       _supabase.auth.onAuthStateChange.listen((data) {
@@ -58,7 +58,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
             }
             break;
           case AuthChangeEvent.signedOut:
-            state = const AuthState.unauthenticated();
+            state = const AuthState(isAuthenticated: false, isLoading: false, isOnboarded: false, isInitialized: true);
             break;
           case AuthChangeEvent.tokenRefreshed:
             if (session != null) {
@@ -149,7 +149,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> logout() async {
     await _supabase.auth.signOut();
-    state = const AuthState.unauthenticated();
+    state = const AuthState(isAuthenticated: false, isLoading: false, isOnboarded: false, isInitialized: true);
   }
 
   void clearError() => state = state.copyWith(error: null);

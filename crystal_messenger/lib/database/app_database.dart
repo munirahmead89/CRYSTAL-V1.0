@@ -87,11 +87,11 @@ class AppDatabase extends _$AppDatabase {
 
   // ─── Contact Operations ─────────────────────────────
   Future<List<ContactsTableData>> getAllContacts() =>
-      (select(contactsTable)..orderBy([(t) => t.displayName]))
+      (select(contactsTable)..orderBy([(t) => OrderingTerm.asc(t.displayName)]))
           .get();
 
   Stream<List<ContactsTableData>> watchAllContacts() =>
-      (select(contactsTable)..orderBy([(t) => t.displayName]))
+      (select(contactsTable)..orderBy([(t) => OrderingTerm.asc(t.displayName)]))
           .watch();
 
   Future<void> upsertContact(ContactsTableCompanion contact) =>
@@ -103,7 +103,7 @@ class AppDatabase extends _$AppDatabase {
   // ─── Pending Actions (Offline Queue) ────────────────
   Future<List<PendingActionsTableData>> getPendingActions() =>
       (select(pendingActionsTable)
-            ..orderBy([(t) => t.createdAt]))
+            ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
           .get();
 
   Future<int> addPendingAction(String type, String payload) =>
@@ -116,16 +116,15 @@ class AppDatabase extends _$AppDatabase {
   Future<void> removePendingAction(int id) =>
       (delete(pendingActionsTable)..where((t) => t.id.equals(id))).go();
 
-  Future<void> incrementRetryCount(int id) =>
-      (update(pendingActionsTable)..where((t) => t.id.equals(id))).write(
-        PendingActionsTableCompanion(
-          retryCount: Value(
-            (select(pendingActionsTable)..where((t) => t.id.equals(id)))
-                .getSingle()
-                .then((r) => r.retryCount + 1),
-          ),
-        ),
-      );
+  Future<void> incrementRetryCount(int id) async {
+    final current = (select(pendingActionsTable)
+          ..where((t) => t.id.equals(id)))
+        .getSingle();
+    final row = await current;
+    await (update(pendingActionsTable)..where((t) => t.id.equals(id))).write(
+      PendingActionsTableCompanion(retryCount: Value(row.retryCount + 1)),
+    );
+  }
 }
 
 LazyDatabase _openConnection() {

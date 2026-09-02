@@ -4,7 +4,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'onboarding_provider.freezed.dart';
 
 @freezed
-class OnboardingState with _$OnboardingState {
+abstract class OnboardingState with _$OnboardingState {
   const factory OnboardingState({
     @Default(0) int currentStep,
     @Default('') String fullName,
@@ -12,6 +12,21 @@ class OnboardingState with _$OnboardingState {
     String? avatarPath,
     @Default(false) bool isLoading,
   }) = _OnboardingState;
+
+  const OnboardingState._();
+
+  bool get canProceed {
+    switch (currentStep) {
+      case 0:
+        return fullName.trim().length >= 2;
+      case 1:
+        return phone.trim().length >= 6;
+      case 2:
+        return true;
+      default:
+        return false;
+    }
+  }
 }
 
 class OnboardingNotifier extends StateNotifier<OnboardingState> {
@@ -33,19 +48,6 @@ class OnboardingNotifier extends StateNotifier<OnboardingState> {
   void setPhone(String phone) => state = state.copyWith(phone: phone);
   void setAvatarPath(String? path) => state = state.copyWith(avatarPath: path);
   void setLoading(bool loading) => state = state.copyWith(isLoading: loading);
-
-  bool get canProceed {
-    switch (state.currentStep) {
-      case 0:
-        return state.fullName.trim().length >= 2;
-      case 1:
-        return state.phone.trim().length >= 6;
-      case 2:
-        return true;
-      default:
-        return false;
-    }
-  }
 }
 
 final onboardingProvider = StateNotifierProvider<OnboardingNotifier, OnboardingState>((ref) {

@@ -12,7 +12,6 @@ class WebRtcSession {
   bool _isConnected = false;
   bool _isMuted = false;
   bool _isCameraOff = false;
-  String? _currentIceCandidateBuffer;
 
   final StreamController<Map<String, dynamic>> _localCandidateController =
       StreamController.broadcast();

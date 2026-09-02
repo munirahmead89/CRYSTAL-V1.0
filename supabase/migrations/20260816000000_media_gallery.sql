@@ -47,8 +47,10 @@ CREATE POLICY "MediaViews: read participants"
   USING (
     message_id IN (
       SELECT m.id FROM public.messages m
-      JOIN public.chats c ON c.id = m.chat_id
-      WHERE c.user_one = auth.uid() OR c.user_two = auth.uid()
+      WHERE EXISTS (
+        SELECT 1 FROM public.chat_participants cp
+        WHERE cp.chat_id = m.chat_id AND cp.user_id = auth.uid()
+      )
     )
   );
 
@@ -189,17 +191,15 @@ BEGIN
   END IF;
 
   IF NOT EXISTS (
-    SELECT 1 FROM public.chats
-    WHERE id = v_msg.chat_id
-      AND (user_one = auth.uid() OR user_two = auth.uid())
+    SELECT 1 FROM public.chat_participants cp
+    WHERE cp.chat_id = v_msg.chat_id AND cp.user_id = auth.uid()
   ) THEN
     RAISE EXCEPTION 'Not a participant in source chat';
   END IF;
 
   IF NOT EXISTS (
-    SELECT 1 FROM public.chats
-    WHERE id = p_target_chat_id
-      AND (user_one = auth.uid() OR user_two = auth.uid())
+    SELECT 1 FROM public.chat_participants cp
+    WHERE cp.chat_id = p_target_chat_id AND cp.user_id = auth.uid()
   ) THEN
     RAISE EXCEPTION 'Not a participant in target chat';
   END IF;

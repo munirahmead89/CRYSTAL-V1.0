@@ -42,7 +42,7 @@ class DataStorageScreen extends ConsumerWidget {
             subtitle: const Text('Reduce data in calls', style: TextStyle(color: AppColors.textTertiary)),
             trailing: Switch(
               value: s.lowDataUsage,
-              activeColor: AppColors.primary,
+              activeThumbColor: AppColors.primary,
               onChanged: notifier.setLowDataUsage,
             ),
           ),

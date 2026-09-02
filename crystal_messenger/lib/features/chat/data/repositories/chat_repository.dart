@@ -1,6 +1,9 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:drift/drift.dart';
 import '../../../../providers/supabase_provider.dart';
 import '../../../../providers/database_provider.dart';
+import '../../../../database/app_database.dart';
 
 class ChatRepository {
   final SupabaseClient _supabase;
@@ -19,22 +22,11 @@ class ChatRepository {
     final response = await _supabase
         .from('chat_with_last_message')
         .select()
-        .eq('user_id', userId)
         .order('last_message_at', ascending: false);
 
     // Cache to local DB
     for (final chat in response) {
-      await _database.upsertChat(ChatsTableCompanion.insert(
-        id: chat['chat_id'] ?? chat['id'],
-        type: chat['type'] ?? 'direct',
-        name: Value(chat['full_name']),
-        avatarUrl: Value(chat['avatar_url']),
-        lastMessageContent: Value(chat['last_message_content']),
-        lastMessageAt: chat['last_message_at'] != null
-            ? Value(DateTime.tryParse(chat['last_message_at']) ?? DateTime.now())
-            : const Value.absent(),
-        unreadCount: Value(chat['unread_count'] ?? 0),
-      ));
+      await _upsertChat(chat);
     }
 
     return List<Map<String, dynamic>>.from(response);
@@ -45,25 +37,44 @@ class ChatRepository {
       final response = await _supabase
           .from('chat_with_last_message')
           .select()
-          .eq('user_id', userId)
           .order('last_message_at', ascending: false);
 
       for (final chat in response) {
-        await _database.upsertChat(ChatsTableCompanion.insert(
-          id: chat['chat_id'] ?? chat['id'],
-          type: chat['type'] ?? 'direct',
-          name: Value(chat['full_name']),
-          avatarUrl: Value(chat['avatar_url']),
-          lastMessageContent: Value(chat['last_message_content']),
-          lastMessageAt: chat['last_message_at'] != null
-              ? Value(DateTime.tryParse(chat['last_message_at']) ?? DateTime.now())
-              : const Value.absent(),
-          unreadCount: Value(chat['unread_count'] ?? 0),
-        ));
+        await _upsertChat(chat);
       }
     } catch (e) {
       // Background sync fails silently — local cache remains
     }
+  }
+
+  Future<void> _upsertChat(Map<String, dynamic> chat) async {
+    final other = chat['other_participant'];
+    final otherProfile =
+        other is Map ? Map<String, dynamic>.from(other) : const <String, dynamic>{};
+    final lastMessage = chat['last_message'];
+    final lastMessageMap =
+        lastMessage is Map ? Map<String, dynamic>.from(lastMessage) : null;
+    await _database.upsertChat(ChatsTableCompanion.insert(
+      id: chat['chat_id'] ?? chat['id'],
+      type: chat['type'] ?? 'direct',
+      name: Value(
+          chat['name'] ?? otherProfile['full_name'] ?? otherProfile['name']),
+      avatarUrl: Value(chat['avatar_url'] ?? otherProfile['avatar_url']),
+      lastMessageContent:
+          Value(lastMessageMap?['content'] ?? chat['last_message_content']),
+      lastMessageAt: (lastMessageMap?['created_at'] != null
+              ? DateTime.tryParse(lastMessageMap!['created_at'])
+              : (chat['last_message_at'] != null
+                  ? DateTime.tryParse(chat['last_message_at'])
+                  : null)) != null
+          ? Value((lastMessageMap?['created_at'] != null
+                  ? DateTime.tryParse(lastMessageMap!['created_at'])
+                  : (chat['last_message_at'] != null
+                      ? DateTime.tryParse(chat['last_message_at'])
+                      : null))!)
+          : const Value.absent(),
+      unreadCount: Value(chat['unread_count'] ?? 0),
+    ));
   }
 
   Future<Map<String, dynamic>> createDirectChat(String otherUserId) async {

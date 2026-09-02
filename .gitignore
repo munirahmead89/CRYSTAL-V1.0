@@ -1,1 +1,43 @@
 node_modules
+
+# Local/dev exclusions
+.idea/
+flutterSDK/
+flutterSDK - Copy/
+supabase/.temp/
+
+# Environment files (NEVER commit secrets)
+.env
+.env.local
+.env.server
+.env.production
+
+# TLS certificates
+*.pem
+*.key
+certs/
+
+# Firebase config (generated per-project)
+google-services.json
+GoogleService-Info.plist
+
+# Flutter build artifacts
+crystal_messenger/build/
+crystal_messenger/.dart_tool/
+crystal_messenger/pubspec.lock
+crystal_messenger/.flutter-plugins
+crystal_messenger/.flutter-plugins-dependencies
+crystal_messenger/android/.gradle/
+crystal_messenger/ios/Pods/
+crystal_messenger/ios/.symlinks/
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Logs
+*.log
+crystal_messenger/build_err.txt
+crystal_messenger/build_log.txt
+crystal_messenger/build_pid.txt

@@ -102,12 +102,11 @@ class _ChatInfoScreenState extends ConsumerState<ChatInfoScreen> {
   Widget build(BuildContext context) {
     final settings = ref.watch(chatSettingsProvider(widget.chatId));
     final isGroup = _chat?['type'] == 'group' || _chat?['type'] == 'broadcast';
-    final name = isGroup
-        ? (_chat?['name'] ?? 'Group')
-        : ((_chat?['other_participant'] as Map?)?['full_name'] ?? 'Chat');
-    final avatar = isGroup
-        ? _chat?['avatar_url']
-        : (_chat?['other_participant'] as Map?)?['avatar_url'];
+    final otherP = _chat?['other_participant'];
+    final otherProfile =
+        otherP is Map ? Map<String, dynamic>.from(otherP) : const <String, dynamic>{};
+    final name = isGroup ? (_chat?['name'] ?? 'Group') : (otherProfile['full_name'] ?? 'Chat');
+    final avatar = isGroup ? (_chat?['avatar_url']) : otherProfile['avatar_url'];
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -166,7 +165,7 @@ class _ChatInfoScreenState extends ConsumerState<ChatInfoScreen> {
                   title: const Text('Pin chat', style: TextStyle(color: AppColors.textPrimary)),
                   trailing: Switch(
                     value: settings.isPinned,
-                    activeColor: AppColors.primary,
+                    activeThumbColor: AppColors.primary,
                     onChanged: (_) => ref.read(chatSettingsProvider(widget.chatId).notifier).togglePin(),
                   ),
                 ),
@@ -254,6 +253,6 @@ class _SwitchTile extends StatelessWidget {
   Widget build(BuildContext context) => ListTile(
         leading: const Icon(Icons.notifications, color: AppColors.textPrimary),
         title: Text(title, style: const TextStyle(color: AppColors.textPrimary)),
-        trailing: Switch(value: value, activeColor: AppColors.primary, onChanged: onChanged),
+        trailing: Switch(value: value, activeThumbColor: AppColors.primary, onChanged: onChanged),
       );
 }

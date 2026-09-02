@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -7,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../providers/supabase_provider.dart';
 import '../../providers/shared_preferences_provider.dart';
 import '../../core/utils/logger.dart';
+import 'notification_action_handler.dart';
 
 class PushNotificationService {
   final SupabaseClient _supabase;
@@ -46,6 +48,7 @@ class PushNotificationService {
     await _localNotifications.initialize(
       initSettings,
       onDidReceiveNotificationResponse: _onNotificationTapped,
+      onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
     );
   }
 
@@ -87,8 +90,16 @@ class PushNotificationService {
   Future<void> _showLocalNotification(RemoteMessage message) async {
     final notification = message.notification;
     if (notification == null) return;
+    final chatId = message.data['chat_id'];
+    
+    final isCall = message.data['type'] == 'call';
+    
+    if (isCall) {
+      await _showCallNotification(message);
+      return;
+    }
 
-    const androidDetails = AndroidNotificationDetails(
+    final androidDetails = AndroidNotificationDetails(
       'crystal_messages',
       'Messages',
       channelDescription: 'Incoming messages',
@@ -96,10 +107,24 @@ class PushNotificationService {
       priority: Priority.high,
       playSound: true,
       enableVibration: true,
-      color: Color(0xFF00A884),
+      color: const Color(0xFF00A884),
+      groupKey: chatId,
+      actions: <AndroidNotificationAction>[
+        const AndroidNotificationAction(
+          'reply',
+          'Reply',
+          inputs: <AndroidNotificationActionInput>[
+            AndroidNotificationActionInput(label: 'Type a message'),
+          ],
+        ),
+        const AndroidNotificationAction(
+          'mark_read',
+          'Mark as Read',
+        ),
+      ],
     );
     const iosDetails = DarwinNotificationDetails(presentSound: true);
-    const details = NotificationDetails(
+    final details = NotificationDetails(
       android: androidDetails,
       iOS: iosDetails,
     );
@@ -108,6 +133,40 @@ class PushNotificationService {
       notification.hashCode,
       _prefs.getBool('message_preview') ?? true ? notification.title : 'New message',
       _prefs.getBool('message_preview') ?? true ? notification.body : '',
+      details,
+      payload: chatId,
+    );
+    _vibrateIfAllowed();
+  }
+
+  Future<void> _showCallNotification(RemoteMessage message) async {
+    const androidDetails = AndroidNotificationDetails(
+      'crystal_calls',
+      'Incoming Calls',
+      channelDescription: 'Incoming audio and video calls',
+      importance: Importance.max,
+      priority: Priority.max,
+      playSound: true,
+      enableVibration: true,
+      color: Color(0xFF00A884),
+      fullScreenIntent: true,
+      autoCancel: false,
+      ongoing: true,
+      actions: <AndroidNotificationAction>[
+        AndroidNotificationAction('answer', 'Answer', titleColor: Color(0xFF00A884)),
+        AndroidNotificationAction('decline', 'Decline', titleColor: Color(0xFFF44336)),
+      ],
+    );
+    const iosDetails = DarwinNotificationDetails(presentSound: true);
+    const details = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
+    
+    await _localNotifications.show(
+      message.hashCode,
+      'Incoming Call',
+      message.notification?.body ?? 'Someone is calling',
       details,
       payload: message.data['chat_id'],
     );

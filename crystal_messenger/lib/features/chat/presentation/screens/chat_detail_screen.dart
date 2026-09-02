@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,6 +11,7 @@ import '../providers/chat_provider.dart';
 import '../../../shared/widgets/app_avatar.dart';
 import '../widgets/message_bubble.dart';
 import '../widgets/media_picker_sheet.dart';
+import '../widgets/media_message_bubble.dart';
 import '../widgets/voice_recorder_sheet.dart';
 import '../providers/message_actions_provider.dart';
 import '../../data/repositories/media_repository.dart';
@@ -50,6 +52,9 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     final messages = ref.watch(messageListProvider(widget.chatId));
     final activeChat = ref.watch(activeChatProvider);
     final isTyping = activeChat.typingUserIds.isNotEmpty;
+    final chats = ref.watch(chatListProvider).chats;
+    final thisChat = chats.where((c) => c['id'] == widget.chatId).firstOrNull;
+    final chatName = _chatName(thisChat ?? const {'type': ''});
 
     ref.listen<ActiveChatState>(activeChatProvider, (prev, next) {
       if (next.chatId == widget.chatId && next.typingUserIds.isNotEmpty) {
@@ -71,9 +76,9 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Chat',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  Text(
+                    chatName,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                   if (isTyping)
                     const Text(

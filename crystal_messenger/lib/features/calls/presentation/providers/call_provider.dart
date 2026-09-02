@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../providers/supabase_provider.dart';
@@ -28,20 +29,6 @@ class CallState with _$CallState {
     @Default(false) bool isSpeakerOn,
     @Default(false) bool isConnecting,
   }) = _CallState;
-
-  const CallState.idleState()
-      : status = CallStatus.idle,
-        role = CallRole.caller,
-        callType = 'audio',
-        callId = null,
-        chatId = null,
-        remoteUserId = null,
-        remoteUserName = null,
-        duration = Duration.zero,
-        isMuted = false,
-        isCameraOff = false,
-        isSpeakerOn = false,
-        isConnecting = false;
 }
 
 enum CallStatus { idle, outgoing, incoming, connecting, active, failed, missed, ended }
@@ -58,7 +45,7 @@ class CallNotifier extends StateNotifier<CallState> {
   Timer? _durationTimer;
 
   CallNotifier(this._supabase, this._repository, this._signaling)
-      : super(const CallState.idleState()) {
+      : super(const CallState()) {
     _session.onRemoteStream.listen((_) {});
     _signaling.events.listen(_handleSignal);
   }
@@ -151,7 +138,7 @@ class CallNotifier extends StateNotifier<CallState> {
       payload: {'type': 'decline', 'call_id': state.callId},
     );
     await _session.dispose();
-    state = const CallState.idleState();
+    state = const CallState();
   }
 
   // ─── Signal handling ────────────────────────────────
@@ -194,7 +181,7 @@ class CallNotifier extends StateNotifier<CallState> {
 
   void _handleDecline() {
     _cancelTimers();
-    state = const CallState.idleState();
+    state = const CallState();
   }
 
   void _handleRemoteEnd() {
@@ -206,7 +193,7 @@ class CallNotifier extends StateNotifier<CallState> {
         duration: state.duration.inSeconds,
       );
     }
-    state = const CallState.idleState();
+    state = const CallState();
   }
 
   // ─── Controls ───────────────────────────────────────
@@ -242,7 +229,7 @@ class CallNotifier extends StateNotifier<CallState> {
       );
     }
     await _session.dispose();
-    state = const CallState.idleState();
+    state = const CallState();
   }
 
   // ─── Timers ─────────────────────────────────────────
@@ -257,7 +244,7 @@ class CallNotifier extends StateNotifier<CallState> {
           );
         }
         _session.dispose();
-        state = const CallState.idleState();
+        state = const CallState();
       }
     });
   }

@@ -1,9 +1,11 @@
+import 'dart:convert';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:drift/drift.dart';
 import '../../../../providers/supabase_provider.dart';
 import '../../../../providers/database_provider.dart';
 import '../../../../database/app_database.dart';
 import '../../../../services/offline/offline_queue.dart';
-import '../../../../providers/offline_queue_provider.dart';
 
 class MessageRepository {
   final SupabaseClient _supabase;
@@ -56,12 +58,12 @@ class MessageRepository {
       }
     } catch (e) {
       // Queue for retry when back online
-      await _offlineQueue.enqueue('send_message', {
+      await _offlineQueue.enqueue('send_message', jsonEncode({
         'chat_id': chatId,
         'content': content,
         'message_type': messageType,
         if (replyToId != null) 'reply_to_id': replyToId,
-      }.toString());
+      }));
     }
   }
 
@@ -78,9 +80,10 @@ class MessageRepository {
     });
   }
 
-  Future<void> markAsDelivered(String messageId) async {
+  Future<void> markAsDelivered(String chatId, String messageId) async {
     await _supabase.rpc('mark_messages_delivered', params: {
-      'p_message_id': messageId,
+      'p_chat_id': chatId,
+      'p_message_ids': [messageId],
     });
   }
 

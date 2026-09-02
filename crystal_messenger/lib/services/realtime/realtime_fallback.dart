@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../providers/supabase_provider.dart';
@@ -100,7 +101,7 @@ class RealtimeFallback {
 
   Future<void> broadcastTyping(String chatId, bool isTyping) async {
     final channel = _channels['rt:$chatId'];
-    channel?.sendBroadcastEvent(
+    await channel?.sendBroadcastMessage(
       event: 'typing',
       payload: {
         'user_id': _userId,

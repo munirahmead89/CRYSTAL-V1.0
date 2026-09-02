@@ -28,11 +28,9 @@ class ChatListNotifier extends StateNotifier<ChatListState> {
   Future<void> loadChats() async {
     state = state.copyWith(isLoading: true);
     try {
-      final userId = _supabase.auth.currentUser!.id;
       final response = await _supabase
           .from('chat_with_last_message')
           .select()
-          .eq('user_id', userId)
           .order('last_message_at', ascending: false);
 
       state = ChatListState(

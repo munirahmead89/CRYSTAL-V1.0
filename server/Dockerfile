@@ -25,6 +25,10 @@ RUN rebar3 compile
 
 FROM erlang:27-alpine
 
+LABEL maintainer="Crystal Messenger Team"
+LABEL description="Crystal Messenger real-time WebSocket server"
+LABEL version="1.3.0"
+
 # wget ships with alpine and powers the built-in healthcheck.
 RUN addgroup -S crystal && adduser -S crystal -G crystal
 

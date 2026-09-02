@@ -28,7 +28,7 @@ Future<void> _performBackgroundSync() async {
 
     // Flush offline queue
     final db = AppDatabase();
-    final queue = OfflineQueue(db);
+    final queue = OfflineQueue(db, Supabase.instance.client);
     await queue.flush();
     await db.close();
 
@@ -56,7 +56,7 @@ class BackgroundSyncService {
       frequency: const Duration(minutes: 15),
       constraints: Constraints(
         networkType: NetworkType.connected,
-        batteryNotLow: true,
+        requiresBatteryNotLow: true,
       ),
       existingWorkPolicy: ExistingWorkPolicy.keep,
     );

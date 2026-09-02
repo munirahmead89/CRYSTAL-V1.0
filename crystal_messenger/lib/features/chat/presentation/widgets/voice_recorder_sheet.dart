@@ -14,7 +14,7 @@ class VoiceRecorderSheet extends ConsumerStatefulWidget {
 }
 
 class _VoiceRecorderSheetState extends ConsumerState<VoiceRecorderSheet> {
-  final Record _record = Record();
+  final AudioRecorder _record = AudioRecorder();
   bool _isRecording = false;
   Duration _duration = Duration.zero;
   Timer? _timer;

@@ -1,9 +1,10 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
 
 class VoiceRecorder {
-  final Record _record = Record();
+  final AudioRecorder _record = AudioRecorder();
   bool _isRecording = false;
   Duration _duration = Duration.zero;
   Timer? _timer;

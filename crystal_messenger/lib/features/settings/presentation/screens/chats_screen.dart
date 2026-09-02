@@ -24,7 +24,7 @@ class ChatsSettingsScreen extends ConsumerWidget {
             subtitle: const Text('True-black backgrounds for OLED', style: TextStyle(color: AppColors.textTertiary)),
             trailing: Switch(
               value: s.pureBlack,
-              activeColor: AppColors.primary,
+              activeThumbColor: AppColors.primary,
               onChanged: notifier.setPureBlack,
             ),
           ),
@@ -41,18 +41,18 @@ class ChatsSettingsScreen extends ConsumerWidget {
             title: const Text('Enter is send', style: TextStyle(color: AppColors.textPrimary)),
             trailing: Switch(
               value: s.enterIsSend,
-              activeColor: AppColors.primary,
+              activeThumbColor: AppColors.primary,
               onChanged: notifier.setEnterIsSend,
             ),
           ),
           const Divider(color: AppColors.divider, height: 1),
           const _Header('Privacy in chats'),
           ListTile(
-            leading: const Icon(Icons.done_all, color: AppColors.textPrimary),
+            leading: const Icon(Icons.traffic, color: AppColors.textPrimary),
             title: const Text('Read receipts', style: TextStyle(color: AppColors.textPrimary)),
             trailing: Switch(
               value: s.readReceipts,
-              activeColor: AppColors.primary,
+              activeThumbColor: AppColors.primary,
               onChanged: notifier.setReadReceipts,
             ),
           ),
@@ -61,7 +61,7 @@ class ChatsSettingsScreen extends ConsumerWidget {
             title: const Text('Online status', style: TextStyle(color: AppColors.textPrimary)),
             trailing: Switch(
               value: s.onlineStatus,
-              activeColor: AppColors.primary,
+              activeThumbColor: AppColors.primary,
               onChanged: notifier.setOnlineStatus,
             ),
           ),
@@ -70,7 +70,7 @@ class ChatsSettingsScreen extends ConsumerWidget {
             title: const Text('Disappearing messages', style: TextStyle(color: AppColors.textPrimary)),
             trailing: Switch(
               value: s.disappearingMessages,
-              activeColor: AppColors.primary,
+              activeThumbColor: AppColors.primary,
               onChanged: notifier.setDisappearingMessages,
             ),
           ),

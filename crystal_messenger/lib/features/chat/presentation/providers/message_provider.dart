@@ -4,7 +4,8 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../providers/supabase_provider.dart';
 import '../../../../providers/database_provider.dart';
-import '../../../data/repositories/message_repository.dart';
+import '../../../../services/realtime/crystal_socket.dart';
+import '../../data/repositories/message_repository.dart';
 import '../../../../core/utils/logger.dart';
 
 part 'message_provider.freezed.dart';
@@ -187,4 +188,37 @@ class MessageListNotifier extends StateNotifier<MessageListState> {
 
 final messageListProvider = StateNotifierProvider.family<MessageListNotifier, MessageListState, String>((ref, chatId) {
   return MessageListNotifier(ref, chatId);
+});
+
+class TypingNotifier extends StateNotifier<bool> {
+  final Ref _ref;
+  final String chatId;
+  Timer? _stopTimer;
+
+  TypingNotifier(this._ref, this.chatId) : super(false);
+
+  void startTyping() {
+    _ref.read(crystalSocketProvider.notifier).sendTyping(chatId);
+    state = true;
+    _stopTimer?.cancel();
+    _stopTimer = Timer(const Duration(seconds: 3), () => stopTyping());
+  }
+
+  void stopTyping() {
+    _stopTimer?.cancel();
+    if (state) {
+      _ref.read(crystalSocketProvider.notifier).sendStopTyping(chatId);
+      state = false;
+    }
+  }
+
+  @override
+  void dispose() {
+    _stopTimer?.cancel();
+    super.dispose();
+  }
+}
+
+final typingProvider = StateNotifierProvider.family<TypingNotifier, bool, String>((ref, chatId) {
+  return TypingNotifier(ref, chatId);
 });

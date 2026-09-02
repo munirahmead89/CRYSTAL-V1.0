@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../providers/supabase_provider.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/setting_row.dart';
 
@@ -114,7 +115,7 @@ class AccountScreen extends ConsumerWidget {
             onPressed: () async {
               await ref.read(supabaseClientProvider).rpc('delete_account');
               if (context.mounted) {
-                await ref.read(authProvider.notifier).signOut();
+                await ref.read(authProvider.notifier).logout();
                 context.go('/onboarding');
               }
             },

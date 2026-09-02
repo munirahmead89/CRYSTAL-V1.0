@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../realtime/crystal_socket.dart';
 import '../../providers/supabase_provider.dart';
-import '../../providers/crystal_socket_provider.dart';
 import '../../core/utils/logger.dart';
 
 /// Dual-lane call signaling:
@@ -30,7 +29,7 @@ class CallSignaling {
   void _setupBroadcastFallback() {
     _broadcastChannel = _supabase
         .channel('rtc:in:$_selfId')
-        .onBroadcastEvent(
+        .onBroadcast(
           event: 'signal',
           callback: (payload) => _handleBroadcastSignal(payload),
         )
@@ -78,7 +77,7 @@ class CallSignaling {
     _socket.sendCallSignal(enriched);
 
     // Lane 2: Supabase broadcast (fire and forget)
-    _broadcastChannel?.sendBroadcastEvent(
+    _broadcastChannel?.sendBroadcastMessage(
       event: 'signal',
       payload: enriched,
     );

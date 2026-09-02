@@ -26,7 +26,7 @@ class AppTheme {
           scrolledUnderElevation: 0,
           systemOverlayStyle: SystemUiOverlayStyle.light,
         ),
-        tabBarTheme: const TabBarTheme(
+        tabBarTheme: const TabBarThemeData(
           labelColor: AppColors.primary,
           unselectedLabelColor: AppColors.textSecondary,
           indicatorColor: AppColors.primary,
