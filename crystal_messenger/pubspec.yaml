@@ -33,7 +33,7 @@ dependencies:
   video_player: ^2.8.6
   chewie: ^1.8.1
   just_audio: ^0.9.36
-  record: ^5.0.4
+  record: ^5.2.0
   flutter_contacts: ^1.1.7+1
   flutter_webrtc: ^0.9.48
   firebase_core: ^2.27.1

@@ -34,7 +34,7 @@
 %% Public API
 %% ------------------------------------------------------------------
 
--spec mode() :: enforced | dev_trust.
+-spec mode() -> enforced | dev_trust.
 mode() ->
     case jwt_secret() of
         <<>> -> dev_trust;
