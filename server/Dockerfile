@@ -16,10 +16,7 @@ FROM erlang:27-alpine AS build
 
 WORKDIR /build
 
-# Dependencies first so Docker layer-caches them.
 COPY rebar.config ./
-RUN rebar3 compile
-
 COPY src/ src/
 RUN rebar3 compile
 

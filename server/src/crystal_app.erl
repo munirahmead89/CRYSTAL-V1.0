@@ -64,7 +64,9 @@ start(_StartType, _StartArgs) ->
     end.
 
 stop(_State) ->
-    ok = cowboy:stop_listener(crystal_listener).%% ------------------------------------------------------------------
+    ok = cowboy:stop_listener(crystal_listener).
+
+%% ------------------------------------------------------------------
 %% Internal helpers
 %% ------------------------------------------------------------------
 
