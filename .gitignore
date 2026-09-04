@@ -21,6 +21,11 @@ certs/
 google-services.json
 GoogleService-Info.plist
 
+# Release signing (NEVER commit)
+crystal_messenger/android/key.properties
+crystal_messenger/android/app/*.jks
+crystal_messenger/android/app/*.keystore
+
 # Flutter build artifacts
 crystal_messenger/build/
 crystal_messenger/.dart_tool/

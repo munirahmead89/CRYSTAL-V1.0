@@ -99,5 +99,96 @@ class AppTheme {
         ),
       );
 
-  static ThemeData get lightTheme => darkTheme;
+  static ThemeData get lightTheme => ThemeData(
+        useMaterial3: true,
+        brightness: Brightness.light,
+        primaryColor: AppColors.primary,
+        scaffoldBackgroundColor: AppColors.lightBackground,
+        colorScheme: const ColorScheme.light(
+          primary: AppColors.primary,
+          onPrimary: Colors.white,
+          secondary: AppColors.secondary,
+          surface: AppColors.lightSurface,
+          onSurface: AppColors.lightOnSurface,
+          error: AppColors.error,
+        ),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: AppColors.lightSurface,
+          foregroundColor: AppColors.lightOnSurface,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          systemOverlayStyle: SystemUiOverlayStyle.dark,
+        ),
+        tabBarTheme: const TabBarThemeData(
+          labelColor: AppColors.primary,
+          unselectedLabelColor: AppColors.lightTextSecondary,
+          indicatorColor: AppColors.primary,
+          indicatorSize: TabBarIndicatorSize.label,
+        ),
+        bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+          backgroundColor: AppColors.lightSurface,
+          selectedItemColor: AppColors.primary,
+          unselectedItemColor: AppColors.lightTextSecondary,
+          type: BottomNavigationBarType.fixed,
+        ),
+        cardTheme: CardThemeData(
+          color: AppColors.lightSurface,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppBorderRadius.md),
+          ),
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: AppColors.lightSurfaceVariant,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppBorderRadius.md),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppBorderRadius.md),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppBorderRadius.md),
+            borderSide: const BorderSide(color: AppColors.primary),
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.sm + 4,
+          ),
+          hintStyle: const TextStyle(color: AppColors.lightTextTertiary),
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
+            minimumSize: const Size(double.infinity, 52),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppBorderRadius.md),
+            ),
+            textStyle: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        textButtonTheme: TextButtonThemeData(
+          style: TextButton.styleFrom(
+            foregroundColor: AppColors.primary,
+          ),
+        ),
+        dividerTheme: const DividerThemeData(
+          color: AppColors.lightDivider,
+          thickness: 0.5,
+        ),
+        snackBarTheme: SnackBarThemeData(
+          backgroundColor: AppColors.lightSurfaceBright,
+          contentTextStyle: const TextStyle(color: AppColors.lightOnSurface),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppBorderRadius.sm),
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
 }

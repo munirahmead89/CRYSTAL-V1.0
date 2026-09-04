@@ -11,6 +11,7 @@ class AppColors {
   static const warning = Color(0xFFF7B928);
   static const error = Color(0xFFEA4335);
 
+  // ─── Dark Theme (default) ───────────────────────────
   static const background = Color(0xFF000000);
   static const surface = Color(0xFF121212);
   static const surfaceVariant = Color(0xFF1A1A1A);
@@ -41,4 +42,28 @@ class AppColors {
 
   static const overlay = Color(0xCC000000);
   static const shadow = Color(0xFF000000);
+
+  // ─── Light Theme ────────────────────────────────────
+  static const lightBackground = Color(0xFFF0F2F5);
+  static const lightSurface = Color(0xFFFFFFFF);
+  static const lightSurfaceVariant = Color(0xFFF5F6F6);
+  static const lightSurfaceBright = Color(0xFFE9EDEF);
+
+  static const lightOnBackground = Color(0xFF111B21);
+  static const lightOnSurface = Color(0xFF111B21);
+  static const lightOnSurfaceVariant = Color(0xFF667781);
+
+  static const lightBorder = Color(0xFFE9EDEF);
+  static const lightBorderLight = Color(0xFFF0F2F5);
+  static const lightDivider = Color(0xFFE9EDEF);
+
+  static const lightTextPrimary = Color(0xFF111B21);
+  static const lightTextSecondary = Color(0xFF667781);
+  static const lightTextTertiary = Color(0xFF8696A0);
+  static const lightTextInverse = Color(0xFFFFFFFF);
+
+  static const lightChatBubbleOutgoing = Color(0xFFD9FDD3);
+  static const lightChatBubbleIncoming = Color(0xFFFFFFFF);
+  static const lightChatTextOutgoing = Color(0xFF111B21);
+  static const lightChatTextIncoming = Color(0xFF111B21);
 }

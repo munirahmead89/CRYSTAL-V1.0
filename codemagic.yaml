@@ -1,95 +1,37 @@
 # Codemagic CI/CD for Crystal Messenger (Flutter)
 # Docs: https://docs.codemagic.io/yaml/yaml/
-# Place this file at the repository root.
 
 workflows:
   android-release:
-    name: Crystal Messenger - Android App Bundle
+    name: Crystal Messenger - Android APK
     max_build_duration: 45
     instance_type: mac_mini_m2
     working_directory: crystal_messenger
     environment:
       flutter: stable
       java: 17
-      vars:
-        SUPABASE_URL: "https://npafjhshccbiukyjgfrt.supabase.co"
-        SUPABASE_ANON_KEY: "sb_publishable_Mm48hrAwAe7qI4-tQKrNGg_KXPWw0CR"
-        PACKAGE_NAME: "com.crystalmessenger"
-        ORG_NAME: "com.crystalmessenger"
-        FLAVOR: "production"
+      groups:
+        - supabase_credentials
     cache:
       cache_paths:
         - $FLUTTER_ROOT/.pub-cache
         - $HOME/.gradle/caches
         - $CM_BUILD_DIR/.dart_tool
     scripts:
-      # 1. Scaffold native platforms if missing (first build / fresh checkout)
-      - name: Ensure native project exists
-        script: |
-          if [ ! -d "android" ]; then
-            flutter create . --org $ORG_NAME --project-name crystal_messenger --platforms=android
-          fi
-
-      # 1b. Bump SDK levels + enable multidex so heavy plugin set builds cleanly
-      - name: Patch Android Gradle config
-        script: |
-          cd android/app
-          # Groovy build.gradle
-          if [ -f build.gradle ]; then
-            sed -i.bak 's/minSdk = flutter.minSdkVersion/minSdk = 23/' build.gradle
-            sed -i.bak 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 23/' build.gradle
-            sed -i.bak 's/targetSdk = flutter.targetSdkVersion/targetSdk = 34/' build.gradle
-            sed -i.bak 's/targetSdkVersion flutter.targetSdkVersion/targetSdkVersion 34/' build.gradle
-            sed -i.bak 's/compileSdk = flutter.compileSdkVersion/compileSdk = 34/' build.gradle
-            sed -i.bak 's/compileSdkVersion flutter.compileSdkVersion/compileSdkVersion 34/' build.gradle
-            # Enable multidex
-            if ! grep -q "multiDexEnabled true" build.gradle; then
-              sed -i.bak 's/defaultConfig {/defaultConfig {\n        multiDexEnabled true/' build.gradle
-            fi
-          fi
-          cd ../..
-
-      # 2. Install dependencies
       - name: Pub get
         script: flutter pub get
 
-      # 3. Generate freezed / drift / riverpod code
       - name: Build runners
         script: dart run build_runner build --delete-conflicting-outputs
 
-      # 4. (Optional) Inject Firebase config if provided as a Codemagic secure file
-      - name: Inject Firebase (optional)
-        script: |
-          if [ -n "$GOOGLE_SERVICES_JSON" ]; then
-            echo "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
-            echo "Firebase google-services.json written."
-          else
-            echo "No GOOGLE_SERVICES_JSON provided - building without FCM config."
-          fi
-
-      # 5. Analyze (warnings allowed, does not fail build)
-      - name: Analyze
-        script: flutter analyze || true
-
-      # 6. Build the Android App Bundle + APK (release)
-      - name: Build App Bundle & APK
+      - name: Build APK (release)
         script: |
           VERSION_LINE=$(grep -m1 '^version:' pubspec.yaml | sed 's/version: //')
           BUILD_NAME=$(echo "$VERSION_LINE" | cut -d'+' -f1)
           BUILD_NUMBER=$(echo "$VERSION_LINE" | cut -d'+' -f2)
-          flutter build appbundle --release \
+          flutter build apk --release \
             --dart-define=SUPABASE_URL="$SUPABASE_URL" \
             --dart-define=SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY" \
-            --dart-define=FLAVOR="$FLAVOR" \
-            --build-name="$BUILD_NAME" ${BUILD_NUMBER:+--build-number="$BUILD_NUMBER"}
-          flutter build apk --release --split-per-abi \
-            --dart-define=SUPABASE_URL="$SUPABASE_URL" \
-            --dart-define=SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY" \
-            --dart-define=FLAVOR="$FLAVOR" \
             --build-name="$BUILD_NAME" ${BUILD_NUMBER:+--build-number="$BUILD_NUMBER"}
     artifacts:
-      - build/app/outputs/bundle/release/app-release.aab
-      - build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
-      - build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
-      - build/app/outputs/flutter-apk/app-x86_64-release.apk
-      - build/app/outputs/bundle/release/output-metadata.json
+      - build/app/outputs/flutter-apk/app-release.apk

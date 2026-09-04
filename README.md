@@ -25,6 +25,7 @@ WhatsApp-clone built with **Flutter** + **Supabase** + **Erlang** real-time serv
 
 ## Features
 
+### Core
 - Anonymous auth with phone onboarding
 - Real-time 1:1 and group messaging
 - Read/delivery receipts (single tick / double tick)
@@ -38,7 +39,15 @@ WhatsApp-clone built with **Flutter** + **Supabase** + **Erlang** real-time serv
 - Disappearing messages (24h auto-purge)
 - Push notifications (Firebase FCM)
 - QR code contact sharing
-- Dark theme (WhatsApp-style)
+
+### Innovations (v2.0)
+- **Light/Dark Theme Toggle** - System, Light, or Dark theme with WhatsApp-style light mode
+- **Interactive Polls** - Create polls in group chats with anonymous/multi-choice options
+- **Smart Replies** - AI-powered contextual reply suggestions (rule-based, no API needed)
+- **Scheduled Messages** - Queue messages for future delivery
+- **Message Threading** - Reply threads for organized group conversations
+- **End-to-End Encryption** - Signal Protocol-inspired E2EE with key bundles and session management
+- **Enhanced Attachment Menu** - Unified picker for media, polls, and scheduled messages
 
 ## Quick Start
 
@@ -129,9 +138,9 @@ CRYSTAL MESSENGER/
 
 ## Database
 
-20+ tables with RLS policies, 14+ RPC functions. See `supabase/migrations/` for the full schema.
+25+ tables with RLS policies, 20+ RPC functions. See `supabase/migrations/` for the full schema.
 
-Key tables: `profiles`, `chats`, `chat_participants`, `messages`, `message_reads`, `contacts`, `calls`, `statuses`, `message_reactions`, `attachments`, `groups`, `notifications`
+Key tables: `profiles`, `chats`, `chat_participants`, `messages`, `message_reads`, `contacts`, `calls`, `statuses`, `message_reactions`, `attachments`, `groups`, `notifications`, `polls`, `poll_options`, `poll_votes`, `scheduled_messages`, `user_key_bundles`
 
 ## Deployment
 

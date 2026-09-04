@@ -94,7 +94,7 @@ class SettingsScreen extends ConsumerWidget {
           SettingRow(
             icon: Icons.info_outline,
             title: 'About',
-            subtitle: 'v1.3.0',
+            subtitle: 'v2.0.0',
             onTap: () {},
           ),
         ],

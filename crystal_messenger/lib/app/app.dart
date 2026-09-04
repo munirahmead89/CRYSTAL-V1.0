@@ -42,6 +42,19 @@ class _CrystalMessengerAppState extends ConsumerState<CrystalMessengerApp> {
   Widget build(BuildContext context) {
     final router = ref.watch(routerProvider);
     final prefs = ref.watch(sharedPreferencesProvider);
+    final settings = ref.watch(settingsProvider);
+
+    ThemeMode themeMode;
+    switch (settings.theme) {
+      case 'light':
+        themeMode = ThemeMode.light;
+        break;
+      case 'dark':
+        themeMode = ThemeMode.dark;
+        break;
+      default:
+        themeMode = ThemeMode.system;
+    }
 
     return ProviderScope(
       overrides: [
@@ -50,9 +63,9 @@ class _CrystalMessengerAppState extends ConsumerState<CrystalMessengerApp> {
       child: MaterialApp.router(
         title: 'Crystal Messenger',
         debugShowCheckedModeBanner: false,
-        theme: AppTheme.darkTheme,
+        theme: AppTheme.lightTheme,
         darkTheme: AppTheme.darkTheme,
-        themeMode: ThemeMode.dark,
+        themeMode: themeMode,
         routerConfig: router,
       ),
     );

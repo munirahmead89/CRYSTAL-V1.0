@@ -5,6 +5,8 @@
 #   .\scripts\build.ps1                    # Build universal APK
 #   .\scripts\build.ps1 -SplitAbi          # Build split APKs per ABI
 #   .\scripts\build.ps1 -Aab               # Build AAB for Play Store
+#   .\scripts\build.ps1 -Shorebird         # Build APK with Shorebird (OTA-capable)
+#   .\scripts\build.ps1 -Shorebird -Aab    # Build AAB with Shorebird
 #   .\scripts\build.ps1 -Clean             # Clean build first
 #
 # Environment:
@@ -15,7 +17,8 @@ param(
     [switch]$SplitAbi,
     [switch]$Aab,
     [switch]$Clean,
-    [switch]$Release
+    [switch]$Release,
+    [switch]$Shorebird
 )
 
 $ErrorActionPreference = "Stop"
@@ -84,7 +87,22 @@ Push-Location $FlutterDir
 
 $buildMode = if ($Release) { "--release" } else { "--release" }
 
-if ($Aab) {
+if ($Shorebird) {
+    # Shorebird builds: replace flutter build with shorebird release
+    $shorebirdArgs = @("release", "android")
+    if ($Aab) {
+        # Default is AAB, no flag needed
+    } else {
+        $shorebirdArgs += "--artifact", "apk"
+    }
+    if (-not [string]::IsNullOrEmpty($defineArgs)) {
+        # Shorebird doesn't support --dart-define directly; env vars must be set before build
+        Write-Host "  NOTE: Set SUPABASE_URL and SUPABASE_ANON_KEY as env vars before running" -ForegroundColor Yellow
+    }
+    Write-Host "  Building with Shorebird (OTA-capable)..." -ForegroundColor Yellow
+    Write-Host "  Command: shorebird $($shorebirdArgs -join ' ')" -ForegroundColor DarkGray
+    Invoke-Expression "shorebird $($shorebirdArgs -join ' ')"
+} elseif ($Aab) {
     Write-Host "  Building AAB (Play Store)..." -ForegroundColor Yellow
     Invoke-Expression "flutter build appbundle $buildMode $defineArgs"
 } elseif ($SplitAbi) {
@@ -102,7 +120,15 @@ Write-Host ""
 Write-Host "Build complete!" -ForegroundColor Green
 Write-Host ""
 
-if ($Aab) {
+if ($Shorebird) {
+    Write-Host "Shorebird release created. To push a patch later:" -ForegroundColor Cyan
+    Write-Host "  shorebird patch android" -ForegroundColor Cyan
+    Write-Host ""
+    $shorebirdDir = Join-Path $FlutterDir ".shorebird"
+    if (Test-Path $shorebirdDir) {
+        Write-Host "Shorebird config: $shorebirdDir" -ForegroundColor DarkGray
+    }
+} elseif ($Aab) {
     $aabPath = Join-Path $FlutterDir "build\app\outputs\bundle\release\app-release.aab"
     if (Test-Path $aabPath) {
         Write-Host "AAB: $aabPath" -ForegroundColor Cyan

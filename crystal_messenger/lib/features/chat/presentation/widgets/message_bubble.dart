@@ -16,6 +16,7 @@ class MessageBubble extends ConsumerWidget {
   final VoidCallback? onDelete;
   final VoidCallback? onForward;
   final VoidCallback? onTapMedia;
+  final VoidCallback? onThread;
 
   const MessageBubble({
     super.key,
@@ -25,6 +26,7 @@ class MessageBubble extends ConsumerWidget {
     this.onDelete,
     this.onForward,
     this.onTapMedia,
+    this.onThread,
   });
 
   @override

@@ -13,6 +13,11 @@ import '../widgets/message_bubble.dart';
 import '../widgets/media_picker_sheet.dart';
 import '../widgets/media_message_bubble.dart';
 import '../widgets/voice_recorder_sheet.dart';
+import '../widgets/create_poll_sheet.dart';
+import '../widgets/poll_results_widget.dart';
+import '../widgets/schedule_message_sheet.dart';
+import '../widgets/smart_replies_widget.dart';
+import '../widgets/thread_sheet.dart';
 import '../providers/message_actions_provider.dart';
 import '../../data/repositories/media_repository.dart';
 
@@ -155,27 +160,86 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                       final isMe = message['sender_id'] ==
                           ref.read(supabaseClientProvider).auth.currentUser?.id;
 
-                      return MessageBubble(
-                        message: message,
-                        isMe: isMe,
-                        onReply: () => _startReply(
-                          message['id'],
-                          message['content'] ?? '',
-                        ),
-                        onDelete: () => _deleteMessage(message['id']),
-                        onForward: () => _pickForwardTarget(message['id']),
-                        onTapMedia: () {
-                          if ((message['message_type'] ?? 'text') == 'video') {
-                            showModalBottomSheet(
-                              context: context,
-                              builder: (_) => VideoPlayerSheet(reference: message['content'] ?? ''),
-                            );
-                          }
-                        },
+                      // Poll message
+                      if (message['message_type'] == 'poll' &&
+                          message['metadata'] != null) {
+                        final pollId = (message['metadata'] as Map<String, dynamic>?)?['poll_id'];
+                        if (pollId != null) {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              MessageBubble(
+                                message: message,
+                                isMe: isMe,
+                                onReply: () => _startReply(message['id'], message['content'] ?? ''),
+                                onDelete: () => _deleteMessage(message['id']),
+                                onForward: () => _pickForwardTarget(message['id']),
+                              ),
+                              PollResultsWidget(pollId: pollId),
+                            ],
+                          );
+                        }
+                      }
+
+                      final threadCount = message['thread_reply_count'] as int? ?? 0;
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          MessageBubble(
+                            message: message,
+                            isMe: isMe,
+                            onReply: () => _startReply(message['id'], message['content'] ?? ''),
+                            onDelete: () => _deleteMessage(message['id']),
+                            onForward: () => _pickForwardTarget(message['id']),
+                            onTapMedia: () {
+                              if ((message['message_type'] ?? 'text') == 'video') {
+                                showModalBottomSheet(
+                                  context: context,
+                                  builder: (_) => VideoPlayerSheet(reference: message['content'] ?? ''),
+                                );
+                              }
+                            },
+                            onThread: threadCount > 0 ? () => _openThread(message['id']) : null,
+                          ),
+                          if (threadCount > 0)
+                            GestureDetector(
+                              onTap: () => _openThread(message['id']),
+                              child: Container(
+                                margin: const EdgeInsets.only(left: 16, bottom: 4),
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withAlpha(20),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  '$threadCount repl${threadCount == 1 ? 'y' : 'ies'}',
+                                  style: const TextStyle(
+                                    color: AppColors.primary,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
                       );
                     },
                   ),
           ),
+
+          // Smart Replies
+          if (messages.messages.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: SmartRepliesWidget(
+                chatId: widget.chatId,
+                onReplySelected: (reply) {
+                  _messageController.text = reply;
+                  _sendMessage();
+                },
+              ),
+            ),
 
           // Reply preview
           if (_replyToId != null)
@@ -261,17 +325,51 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                     ),
                   ),
                   const SizedBox(width: 4),
-                  IconButton(
+                  // Attachment + extras popup
+                  PopupMenuButton<String>(
                     icon: const Icon(Icons.attach_file, color: AppColors.textSecondary),
-                    onPressed: () {
-                      showModalBottomSheet(
-                        context: context,
-                        builder: (_) => MediaPickerSheet(
-                          chatId: widget.chatId,
-                          replyToId: _replyToId,
-                        ),
-                      );
+                    color: AppColors.surfaceBright,
+                    onSelected: (value) {
+                      if (value == 'poll') {
+                        _openCreatePoll();
+                      } else if (value == 'schedule') {
+                        _openScheduleMessage();
+                      } else {
+                        showModalBottomSheet(
+                          context: context,
+                          builder: (_) => MediaPickerSheet(
+                            chatId: widget.chatId,
+                            replyToId: _replyToId,
+                          ),
+                        );
+                      }
                     },
+                    itemBuilder: (_) => [
+                      const PopupMenuItem(
+                        value: 'media',
+                        child: Row(children: [
+                          Icon(Icons.photo, color: AppColors.primary, size: 20),
+                          SizedBox(width: 12),
+                          Text('Media'),
+                        ]),
+                      ),
+                      const PopupMenuItem(
+                        value: 'poll',
+                        child: Row(children: [
+                          Icon(Icons.how_to_vote, color: AppColors.primary, size: 20),
+                          SizedBox(width: 12),
+                          Text('Poll'),
+                        ]),
+                      ),
+                      const PopupMenuItem(
+                        value: 'schedule',
+                        child: Row(children: [
+                          Icon(Icons.schedule_send, color: AppColors.primary, size: 20),
+                          SizedBox(width: 12),
+                          Text('Schedule Message'),
+                        ]),
+                      ),
+                    ],
                   ),
                   const SizedBox(width: 4),
                   _messageController.text.isEmpty
@@ -382,6 +480,39 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
   String _chatName(Map<String, dynamic> c) {
     if (c['type'] == 'group' || c['type'] == 'broadcast') return c['name'] ?? 'Group';
     return (c['other_participant'] as Map?)?['full_name'] ?? 'Unknown';
+  }
+
+  void _openCreatePoll() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => CreatePollSheet(chatId: widget.chatId),
+    );
+  }
+
+  void _openScheduleMessage() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => ScheduleMessageSheet(
+        chatId: widget.chatId,
+        initialContent: _messageController.text,
+      ),
+    );
+  }
+
+  void _openThread(String messageId) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => ThreadSheet(
+        threadId: messageId,
+        chatId: widget.chatId,
+      ),
+    );
   }
 }
 

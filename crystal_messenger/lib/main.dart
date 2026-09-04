@@ -9,6 +9,7 @@ import 'app/app.dart';
 import 'providers/shared_preferences_provider.dart';
 import 'services/push/push_notification_service.dart';
 import 'services/push/background_refresh.dart';
+import 'services/encryption/encryption_service.dart';
 import 'firebase_options.dart';
 import 'core/constants/api_constants.dart';
 import 'core/utils/logger.dart';
@@ -17,7 +18,6 @@ import 'core/utils/logger.dart';
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   Logger.info('Main', 'Handling a background message: ${message.messageId}');
-  // Note: Local notifications for background messages are handled natively or through the plugin
 }
 
 void main() async {
@@ -35,7 +35,6 @@ void main() async {
     systemNavigationBarIconBrightness: Brightness.light,
   ));
 
-  // 1. Supabase MUST initialize first — other services depend on it.
   try {
     await Supabase.initialize(
       url: ApiConstants.supabaseUrl,
@@ -47,10 +46,8 @@ void main() async {
     Logger.error('Main', 'Supabase init failed', e);
   }
 
-  // 2. SharedPreferences (needed by providers)
   final prefs = await SharedPreferences.getInstance();
 
-  // 3. Firebase (optional — push notifications won't block app if unavailable)
   try {
     if (DefaultFirebaseOptions.projectId != null) {
       await Firebase.initializeApp(
@@ -63,7 +60,6 @@ void main() async {
     Logger.error('Main', 'Firebase init skipped', e);
   }
 
-  // 4. Background sync (Workmanager) — optional
   try {
     final bg = BackgroundSyncService();
     await bg.initialize();
@@ -71,12 +67,20 @@ void main() async {
     Logger.error('Main', 'Background sync init failed', e);
   }
 
-  // 5. Push notifications — optional
   try {
     final push = PushNotificationService(Supabase.instance.client, prefs);
     await push.initialize();
   } catch (e) {
     Logger.error('Main', 'Push init failed', e);
+  }
+
+  // Initialize E2EE key registration
+  try {
+    final encryptionService = EncryptionService(Supabase.instance.client, prefs);
+    await encryptionService.registerKeys();
+    Logger.info('Main', 'E2EE keys initialized');
+  } catch (e) {
+    Logger.error('Main', 'E2EE init failed', e);
   }
 
   runApp(
