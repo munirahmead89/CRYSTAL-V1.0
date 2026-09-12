@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -29,7 +30,7 @@ import androidx.compose.material.icons.rounded.AccessTime
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.DoneAll
-import androidx.compose.material.icons.rounded.GalleryThumbnail
+import androidx.compose.material.icons.rounded.PhotoLibrary
 import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.PhotoCamera
@@ -66,13 +67,15 @@ import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.crystal_messenger.app.core.database.MessageEntity
 import com.crystal_messenger.app.di.AppContainer
 import com.crystal_messenger.app.ui.components.CrystalAvatar
 import com.crystal_messenger.app.ui.components.formatTime
 import com.crystal_messenger.app.ui.theme.IncomingBubble
 import com.crystal_messenger.app.ui.theme.OutgoingBubble
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
 fun ChatDetailScreen(
     container: AppContainer,
@@ -158,14 +161,15 @@ fun ChatDetailScreen(
         bottomBar = {
             val isRecording by vm.isRecording.collectAsStateWithLifecycle()
             MessageInputBar(
-                onSend = { text ->
-                    if (replyTo != null) vm.sendReplyTo(replyTo!!, text) else vm.sendText(text)
-                    replyTo = null
-                },
+onSend = { text ->
+                val reply = replyTo
+                if (reply != null) vm.sendReplyTo(reply, text) else vm.sendText(text)
+                replyTo = null
+            },
                 onAttach = { showAttach = true },
                 onChanged = { vm.onTypingChange(it.isNotBlank()) },
                 onRecordStart = {
-                    if (recordPermission.status.isGranted) {
+                    if (recordPermission.status == com.google.accompanist.permissions.PermissionStatus.Granted) {
                         vm.startVoiceNote(context)
                     } else {
                         recordPermission.launchPermissionRequest()
@@ -204,7 +208,7 @@ fun ChatDetailScreen(
                     Modifier.fillMaxWidth().padding(vertical = 8.dp),
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
-                    AttachAction("Gallery", Icons.Rounded.GalleryThumbnail) {
+                    AttachAction("Gallery", Icons.Rounded.PhotoLibrary) {
                         gallery.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo))
                         showAttach = false
                     }

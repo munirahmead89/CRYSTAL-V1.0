@@ -21,7 +21,7 @@ class StorageRepository(
                 val stream = resolver.openInputStream(uri) ?: return@withContext null
                 val bytes = stream.use { it.readBytes() }
                 val originalName = queryName(uri) ?: UUID.randomUUID().toString()
-                val ext = originalName.substringAfterLast('.', takeIf { '.' in it }?.let { originalName.substringAfterLast('.') } ?: "jpg").ifBlank { "jpg" }
+                val ext = originalName.substringAfterLast('.', "jpg").ifBlank { "jpg" }
                 val fileName = "${System.currentTimeMillis()}.$ext"
                 client.uploadMedia(userId, fileName, bytes, mimeType)
             } catch (e: Exception) {

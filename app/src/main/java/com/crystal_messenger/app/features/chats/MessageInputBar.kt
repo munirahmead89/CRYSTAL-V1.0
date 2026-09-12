@@ -49,7 +49,7 @@ fun MessageInputBar(
             .fillMaxWidth()
             .imePadding()
             .padding(horizontal = 8.dp, vertical = 6.dp)
-            .glassmorphism(alpha = 0.35f, cornerRadius = 26),
+            .glassmorphism(alpha = 0.35f, cornerRadius = 26.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = onAttach) {

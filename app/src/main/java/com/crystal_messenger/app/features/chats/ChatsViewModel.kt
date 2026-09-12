@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.crystal_messenger.app.core.database.ConversationEntity
 import com.crystal_messenger.app.core.database.MemberDao
 import com.crystal_messenger.app.core.database.UserEntity
+import com.crystal_messenger.app.core.database.isGroup
 import com.crystal_messenger.app.core.repository.ChatRepository
 import com.crystal_messenger.app.core.settings.SessionManager
 import com.crystal_messenger.app.core.supabase.Inserted
@@ -24,6 +25,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.jsonPrimitive
 
 data class ConversationItem(
     val id: String,

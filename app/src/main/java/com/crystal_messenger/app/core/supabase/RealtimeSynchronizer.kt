@@ -81,7 +81,7 @@ class RealtimeSynchronizer(
         realtime.disconnect()
     }
 
-    private fun subscribeAll() {
+    private suspend fun subscribeAll() {
         ingest("messages")
         ingest("conversations")
         ingest("conversation_members")

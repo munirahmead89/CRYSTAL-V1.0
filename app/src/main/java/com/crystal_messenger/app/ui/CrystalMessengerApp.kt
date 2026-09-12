@@ -5,12 +5,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.crystal_messenger.app.CrystalApp
+import com.crystal_messenger.app.core.settings.Session
 import com.crystal_messenger.app.di.AppContainer
 import com.crystal_messenger.app.features.camera.CameraScreen
 import com.crystal_messenger.app.features.chats.ChatDetailScreen
@@ -37,7 +39,10 @@ fun CrystalMessengerApp() {
     val container: AppContainer = remember {
         (context.applicationContext as CrystalApp).container
     }
-    val session by container.sessionManager.session.collectAsStateWithLifecycle()
+    val session by container.sessionManager.session.collectAsStateWithLifecycle(
+        initialValue = Session(),
+        lifecycle = LocalLifecycleOwner.current.lifecycle
+    )
 
     val navController = rememberNavController()
 

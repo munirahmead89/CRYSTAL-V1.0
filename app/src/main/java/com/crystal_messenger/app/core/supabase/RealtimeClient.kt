@@ -172,7 +172,7 @@ class RealtimeClient(
     }
 
     private fun nextRef(): String {
-        ref.accumulateAndGet(1) { old -> old + 1 }
+        ref.updateAndGet { old -> old + 1 }
         return ref.get().toString()
     }
 

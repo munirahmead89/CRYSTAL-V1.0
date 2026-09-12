@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.jsonPrimitive
 
 data class ChatUiState(
     val conversation: ConversationEntity? = null,
@@ -53,6 +54,15 @@ class ChatDetailViewModel(
 
     private val meIdFlow = MutableStateFlow<String?>(null)
 
+    private val repoTyping = realtime.changesFor("typing")
+        .map { change ->
+            val row = (change as? Inserted)?.row ?: (change as? Updated)?.row ?: return@map false
+            row["conversation_id"]?.jsonPrimitive?.content == conversationId &&
+                row["is_typing"]?.jsonPrimitive?.content == "true" &&
+                row["user_id"]?.jsonPrimitive?.content != currentMe
+        }
+        .distinctUntilChanged()
+
     private val uiState: StateFlow<ChatUiState> = combine(
         repo.observeConversation(conversationId),
         memberDao.observeMembers(conversationId),
@@ -74,15 +84,6 @@ class ChatDetailViewModel(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ChatUiState())
 
     val state: StateFlow<ChatUiState> = uiState
-
-    private val repoTyping = realtime.changesFor("typing")
-        .map { change ->
-            val row = (change as? Inserted)?.row ?: (change as? Updated)?.row ?: return@map false
-            row["conversation_id"]?.jsonPrimitive?.content == conversationId &&
-                row["is_typing"]?.jsonPrimitive?.content == "true" &&
-                row["user_id"]?.jsonPrimitive?.content != currentMe
-        }
-        .distinctUntilChanged()
 
     private var typingJob: Job? = null
 

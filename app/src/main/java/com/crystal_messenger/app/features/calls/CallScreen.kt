@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
@@ -28,6 +29,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,6 +45,7 @@ import com.crystal_messenger.app.di.AppContainer
 import com.crystal_messenger.app.ui.components.CrystalAvatar
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.jsonPrimitive
 import org.webrtc.VideoTrack
 
@@ -59,6 +62,7 @@ fun CallScreen(
     onFinish: () -> Unit
 ) {
     val context = LocalContext.current
+    val composeScope = rememberCoroutineScope()
     var answered by remember { mutableStateOf(!incoming) }
     var muted by remember { mutableStateOf(false) }
     var speaker by remember { mutableStateOf(false) }
@@ -179,7 +183,9 @@ fun CallScreen(
                         color = Color(0xFFF15C6D),
                         modifier = Modifier.size(64.dp),
                         onClick = {
-                            container.chatRepository.updateCallStatus(callId, "completed", seconds.toInt())
+                            composeScope.launch {
+                                container.chatRepository.updateCallStatus(callId, "completed", seconds.toInt())
+                            }
                             com.crystal_messenger.app.services.CallService.stop(context)
                             onFinish()
                         }
@@ -204,7 +210,9 @@ fun CallScreen(
                             color = Color(0xFFF15C6D),
                             modifier = Modifier.size(72.dp),
                             onClick = {
-                                container.chatRepository.updateCallStatus(callId, "declined")
+                                composeScope.launch {
+                                    container.chatRepository.updateCallStatus(callId, "declined")
+                                }
                                 onFinish()
                             }
                         ) {
@@ -217,7 +225,9 @@ fun CallScreen(
                             color = Color(0xFF25D366),
                             modifier = Modifier.size(72.dp),
                             onClick = {
-                                container.chatRepository.updateCallStatus(callId, "answered")
+                                composeScope.launch {
+                                    container.chatRepository.updateCallStatus(callId, "answered")
+                                }
                                 answered = true
                             }
                         ) {

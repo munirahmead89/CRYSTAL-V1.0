@@ -12,6 +12,7 @@ import com.crystal_messenger.app.di.AppContainer
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -40,7 +41,7 @@ class StatusViewModel(private val container: AppContainer) : ViewModel() {
                 .sortedByDescending { it.statuses.last().createdAt }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val myStatuses: StateFlow<List<StatusGroup>> = combine(statuses) { groups ->
+    val myStatuses: StateFlow<List<StatusGroup>> = statuses.map { groups ->
         groups.filter { it.user.id == currentMeId }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 

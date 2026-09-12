@@ -40,6 +40,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import com.crystal_messenger.app.di.AppContainer
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.PermissionStatus
 import com.google.accompanist.permissions.rememberPermissionState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -67,10 +68,9 @@ fun CameraScreen(
     var capturing by remember { mutableStateOf(false) }
     val executor = remember { ContextCompat.getMainExecutor(context) }
 
-    DisposableEffect(lifecycleOwner, backCamera, cameraPermission.status.isGranted) {
-        if (!cameraPermission.status.isGranted) {
-            onDispose { }
-            return@DisposableEffect
+    DisposableEffect(lifecycleOwner, backCamera, cameraPermission.status) {
+        if (cameraPermission.status != PermissionStatus.Granted) {
+            return@DisposableEffect onDispose { }
         }
         val runnable = Runnable {
             runCatching {
@@ -86,13 +86,12 @@ fun CameraScreen(
         }
         cameraProviderFuture.addListener(runnable, executor)
         onDispose {
-            cameraProviderFuture.removeListener(runnable)
             runCatching { cameraProviderFuture.get().unbindAll() }
         }
     }
 
     LaunchedEffect(Unit) {
-        if (!cameraPermission.status.isGranted) cameraPermission.launchPermissionRequest()
+        if (cameraPermission.status != PermissionStatus.Granted) cameraPermission.launchPermissionRequest()
     }
 
     fun capture() {
@@ -139,7 +138,7 @@ fun CameraScreen(
             }
         }
 
-        if (!cameraPermission.status.isGranted) {
+        if (cameraPermission.status != PermissionStatus.Granted) {
             Surface(
                 modifier = Modifier.align(Alignment.Center).padding(24.dp),
                 shape = MaterialTheme.shapes.large

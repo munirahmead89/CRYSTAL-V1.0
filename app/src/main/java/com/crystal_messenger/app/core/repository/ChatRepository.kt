@@ -32,6 +32,7 @@ import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import java.util.UUID
 
@@ -105,10 +106,10 @@ class ChatRepository(
 
     fun observeConversations() = convDao.observeAll()
 
-    suspend fun createConversation(memberIds: List<String>, type: String = "single"): ConversationDto? {
+    suspend fun createConversation(memberIds: List<String>, name: String = "", type: String = "single"): ConversationDto? {
         val result = api.rpc("find_or_create_conversation", buildJsonObject {
             put("p_member_ids", buildJsonArray { memberIds.forEach { add(JsonPrimitive(it)) } })
-            put("p_name", JsonPrimitive(""))
+            put("p_name", JsonPrimitive(name))
             put("p_type", JsonPrimitive(type))
         })
         val row = (result as? JsonObject) ?: result.jsonObject
