@@ -27,6 +27,7 @@ import java.util.Locale
 import kotlin.math.abs
 
 
+@Composable
 fun Modifier.glassmorphism(alpha: Float = 0.25f, cornerRadius: Dp = 16.dp): Modifier = this
     .clip(RoundedCornerShape(cornerRadius))
     .background(MaterialTheme.colorScheme.surface.copy(alpha = alpha))

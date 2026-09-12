@@ -134,7 +134,7 @@ class ChatRepository(
         // users!inner embeds the user as a nested object
         rows.forEach { row ->
             val nested = row.jsonObject["users"] as? JsonObject ?: return@forEach
-            val user = parseUser(nested)
+            val user = parseUser(nested) ?: return@forEach
             userDao.upsert(user.toEntity())
             memberDao.upsertAll(listOf(com.crystal_messenger.app.core.database.ConversationMemberEntity(
                 conversationId = conversationId,

@@ -51,6 +51,7 @@ data class Updated(
 
 data class Deleted(
     override val table: String,
+    override val row: JsonObject,
     val old: JsonObject
 ) : RealtimeChange
 
@@ -267,8 +268,8 @@ class RealtimeClient(
                 }
                 "DELETE" -> {
                     val old = change["old"] as? JsonObject ?: continue
-                    subscriptions.forEach { if (it.first == table) it.second(Deleted(table, old)) }
-                    _changes.tryEmit(table to Deleted(table, old))
+                    subscriptions.forEach { if (it.first == table) it.second(Deleted(table, old, old)) }
+                    _changes.tryEmit(table to Deleted(table, old, old))
                 }
             }
         }
