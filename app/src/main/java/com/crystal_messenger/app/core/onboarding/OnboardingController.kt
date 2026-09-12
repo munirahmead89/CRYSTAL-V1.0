@@ -69,12 +69,12 @@ class OnboardingController(
             else OnboardingDecision.FreshAccount
 
         logDecision(
-            input = rawPhone,
-            phone = normalized,
-            local = localSession(),
-            lookup = if (exists) "FOUND" else "NOT_FOUND",
-            device = "ALLOWED",
-            decision = if (exists) "EXISTING" else "NEW"
+            rawPhone,
+            normalized,
+            localSession(),
+            if (exists) "FOUND" else "NOT_FOUND",
+            "ALLOWED",
+            if (exists) "EXISTING" else "NEW"
         )
         onDecision(decision, normalized)
         return decision
