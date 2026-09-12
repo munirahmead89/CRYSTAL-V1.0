@@ -1,0 +1,26 @@
+<resources>
+    <string name="app_name">Crystal Messenger</string>
+    <string name="tagline">Fast, private and secure messaging.</string>
+    <string name="onboarding_title">Connect with friends and family</string>
+    <string name="onboarding_subtitle">Crystal Messenger uses real-time encryption-style transport. No codes, no gatekeeping — enter your details and start chatting instantly.</string>
+    <string name="welcome_title">Enter your name</string>
+    <string name="welcome_phone">Enter your phone number</string>
+    <string name="continue_action">Continue</string>
+    <string name="chats_tab">Chats</string>
+    <string name="status_tab">Status</string>
+    <string name="communities_tab">Communities</string>
+    <string name="calls_tab">Calls</string>
+    <string name="settings_title">Settings</string>
+    <string name="search_hint">Search people or chats</string>
+    <string name="message_hint">Message</string>
+    <string name="send">Send</string>
+    <string name="online">online</string>
+    <string name="typing">typing…</string>
+    <string name="new_chat">New chat</string>
+    <string name="new_group">New group</string>
+    <string name="invite">Invite</string>
+    <string name="backup">Backup</string>
+    <string name="app_settings">App settings</string>
+    <string name="help">Help</string>
+    <string name="about">About</string>
+</resources>

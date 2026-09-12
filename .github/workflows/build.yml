@@ -1,0 +1,84 @@
+name: Build Crystal Messenger APKs
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build debug + release APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Inject Supabase credentials (from secrets when provided)
+        shell: bash
+        run: |
+          # Duplicate keys appended last win in Java/gradle properties files,
+          # so this overrides the committed placeholder/default values safely.
+          if [ -n "${{ secrets.SUPABASE_URL }}" ]; then
+            printf '\nSUPABASE_URL=%s\n' "${{ secrets.SUPABASE_URL }}" >> gradle.properties
+          fi
+          if [ -n "${{ secrets.SUPABASE_ANON_KEY }}" ]; then
+            printf '\nSUPABASE_ANON_KEY=%s\n' "${{ secrets.SUPABASE_ANON_KEY }}" >> gradle.properties
+          fi
+
+      - name: Configure release signing
+        shell: bash
+        run: |
+          mkdir -p keystore
+          STORE_PASS="${{ secrets.KEYSTORE_PASSWORD }}"
+          KEY_PASS="${{ secrets.KEY_PASSWORD }}"
+          KEY_ALIAS="${{ secrets.KEY_ALIAS }}"
+          [ -z "$STORE_PASS" ] && STORE_PASS="crystalCiRelease1!"
+          [ -z "$KEY_PASS" ] && KEY_PASS="$STORE_PASS"
+          [ -z "$KEY_ALIAS" ] && KEY_ALIAS="crystal"
+
+          if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
+            echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > keystore/crystal-release.jks
+          else
+            echo "No KEYSTORE_BASE64 secret provided - generating a fresh throwaway signing key."
+            keytool -genkeypair -v -storetype JKS \
+              -keystore keystore/crystal-release.jks \
+              -storepass "$STORE_PASS" -alias "$KEY_ALIAS" -keypass "$KEY_PASS" \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -dname "CN=Crystal Messenger CI, O=Crystal, C=US"
+          fi
+
+          printf 'STORE_PASSWORD=%s\nKEY_ALIAS=%s\nKEY_PASSWORD=%s\n' \
+            "$STORE_PASS" "$KEY_ALIAS" "$KEY_PASS" > keystore/signing.properties
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build debug and release APKs
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          arguments: assembleDebug assembleRelease
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
+
+      - name: Upload APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-messenger-apks
+          if-no-files-found: error
+          path: |
+            app/build/outputs/apk/debug/app-debug.apk
+            app/build/outputs/apk/release/app-release.apk
