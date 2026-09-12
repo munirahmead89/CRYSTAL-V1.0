@@ -20,7 +20,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -68,11 +68,13 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Build debug and release APKs
+      - name: Setup Gradle (caching only)
         uses: gradle/actions/setup-gradle@v4
         with:
-          arguments: assembleDebug assembleRelease
           cache-read-only: ${{ github.event_name == 'pull_request' }}
+
+      - name: Build debug and release APKs
+        run: ./gradlew assembleDebug assembleRelease
 
       - name: Upload APKs
         uses: actions/upload-artifact@v4
