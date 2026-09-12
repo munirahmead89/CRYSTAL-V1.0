@@ -75,6 +75,9 @@ class RealtimeClient(
     private val _changes = MutableSharedFlow<Pair<String, RealtimeChange>>(extraBufferCapacity = 128)
     val changes: SharedFlow<Pair<String, RealtimeChange>> = _changes.asSharedFlow()
 
+    private val _broadcasts = MutableSharedFlow<JsonObject>(extraBufferCapacity = 128)
+    val broadcasts: SharedFlow<JsonObject> = _broadcasts.asSharedFlow()
+
     fun changesFor(table: String): Flow<RealtimeChange> =
         changes.filter { it.first == table }.map { it.second }
     private var webSocket: WebSocket? = null
@@ -100,6 +103,7 @@ class RealtimeClient(
                 val event = root["event"]?.jsonPrimitive?.content ?: return
                 when (event) {
                     "postgres_changes" -> dispatchChanges(root)
+                    "broadcast" -> _broadcasts.tryEmit(root)
                     "phx_reply" -> Unit // join ack
                     else -> Unit // heartbeat, presence_state, etc.
                 }
@@ -144,6 +148,20 @@ class RealtimeClient(
         webSocket?.close(1000, "bye")
         webSocket = null
         connected.set(false)
+    }
+
+    fun broadcast(event: String, payload: JsonObject) {
+        if (!connected.get()) return
+        send(buildJsonObject {
+            put("topic", "realtime:public")
+            put("event", "broadcast")
+            put("payload", buildJsonObject {
+                put("type", "broadcast")
+                put("event", event)
+                put("payload", payload)
+            })
+            put("ref", nextRef())
+        })
     }
 
     private fun open() {

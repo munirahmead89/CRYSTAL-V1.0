@@ -26,7 +26,7 @@ object CallLauncher {
             val name = calleeName ?: user?.name ?: "Unknown"
             val avatar = calleeAvatar ?: user?.avatarUrl
             context.startActivity(
-                CallActivity.outgoingIntent(context, call.id, name, avatar, kind)
+                CallActivity.outgoingIntent(context, call.id, name, avatar, kind, calleeId)
             )
         }
     }

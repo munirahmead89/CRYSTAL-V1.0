@@ -32,13 +32,15 @@ class CallActivity : ComponentActivity() {
             callId: String,
             name: String,
             avatar: String?,
-            kind: String
+            kind: String,
+            targetUserId: String
         ): Intent = Intent(context, CallActivity::class.java).apply {
             putExtra(EXTRA_CALL_ID, callId)
             putExtra(EXTRA_NAME, name)
             putExtra(EXTRA_AVATAR, avatar)
             putExtra(EXTRA_INCOMING, false)
             putExtra(EXTRA_KIND, kind)
+            putExtra("targetUserId", targetUserId)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
         }
 
@@ -47,16 +49,20 @@ class CallActivity : ComponentActivity() {
             callId: String,
             name: String,
             avatar: String?,
-            kind: String = "audio"
+            kind: String = "audio",
+            targetUserId: String
         ): Intent = Intent(context, CallActivity::class.java).apply {
             putExtra(EXTRA_CALL_ID, callId)
             putExtra(EXTRA_NAME, name)
             putExtra(EXTRA_AVATAR, avatar)
             putExtra(EXTRA_INCOMING, true)
             putExtra(EXTRA_KIND, kind)
+            putExtra("targetUserId", targetUserId)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
         }
     }
+
+    private var webRtcManager: com.crystal_messenger.app.core.webrtc.WebRtcManager? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -66,6 +72,20 @@ class CallActivity : ComponentActivity() {
         val avatar = intent.getStringExtra(EXTRA_AVATAR)
         val incoming = intent.getBooleanExtra(EXTRA_INCOMING, false)
         val kind = intent.getStringExtra(EXTRA_KIND) ?: "audio"
+        val isVideo = kind == "video"
+
+        val meId = kotlinx.coroutines.runBlocking { container.sessionManager.current().userId.orEmpty() }
+        val signalingClient = com.crystal_messenger.app.core.webrtc.WebRtcSignalingClient(callId, meId, container.realtime)
+        // Note: targetUserId is needed for signaling, we'll try to extract it from the repository if possible, or assume it's part of the intent. 
+        // For now, we will assume it's passed or handled differently, but since we need it for WebRTC:
+        val targetUserId = intent.getStringExtra("targetUserId") ?: ""
+
+        webRtcManager = com.crystal_messenger.app.core.webrtc.WebRtcManager(
+            context = this,
+            signalingClient = signalingClient,
+            targetUserId = targetUserId,
+            isVideoCall = isVideo
+        )
 
         CallService.start(this, callId, name, avatar)
 
@@ -78,13 +98,21 @@ class CallActivity : ComponentActivity() {
                     avatarUrl = avatar,
                     incoming = incoming,
                     kind = kind,
+                    webRtcManager = webRtcManager,
+                    signalingClient = signalingClient,
                     onFinish = {
+                        webRtcManager?.stop()
                         CallService.stop(this)
                         finish()
                     }
                 )
             }
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        webRtcManager?.stop()
     }
 
     override fun onStart() {
