@@ -38,7 +38,18 @@ class AuthSessionDecodeTest {
             """.trimIndent()
         )
         assertFalse(s.hasSession)
-        assertEquals("u2", s.user?.id) // absent -> user is null
+        assertEquals(null, s.user) // top-level id is not mapped into user
+    }
+
+    @Test
+    fun `validation-pending response with user but no token is not a session`() {
+        val s = decode(
+            """
+            {"user":{"id":"u3","email":"a@b.c"},"weak_password":[]}
+            """.trimIndent()
+        )
+        assertFalse(s.hasSession)
+        assertEquals("u3", s.user?.id) // caller can still see the created user
     }
 
     @Test
