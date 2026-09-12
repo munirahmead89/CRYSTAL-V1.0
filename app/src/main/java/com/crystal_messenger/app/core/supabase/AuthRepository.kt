@@ -114,8 +114,16 @@ class AuthRepository(
         val password = devicePassword(phone)
         return try {
             val session = client.signUp(email, password)
-            applySession(session, phone, name)
-            session
+            if (session.hasSession) {
+                applySession(session, phone, name)
+                session
+            } else {
+                // Confirmation is still pending/rejected on the server: the auth
+                // user exists but no session was issued. Signing in with the
+                // same deterministic credentials reaches the account.
+                OnboardingLogger.info("signup returned no session, falling back to login: phone=$phone")
+                signInExisting(phone, name)
+            }
         } catch (signupError: Exception) {
             // The account may already exist (created by an older build or a
             // previous session) even though the users-table lookup race left it
@@ -130,8 +138,8 @@ class AuthRepository(
                 } catch (loginError: Exception) {
                     OnboardingLogger.warn("signup+login both failed for phone=$phone")
                     throw OnboardingException(
-                        "This number already belongs to an account created by an older build. " +
-                            "Sign out there (or reinstall) and try again.",
+                        "This number already belongs to an account. Sign in with this number on the " +
+                            "device that created it (or reset) and try again.",
                         loginError
                     )
                 }
@@ -168,9 +176,13 @@ class AuthRepository(
     }
 
     private suspend fun applySession(session: AuthSessionDto, phone: String, name: String) {
-        client.accessToken.set(session.accessToken)
+        val token = session.accessToken
+        if (token.isNullOrBlank()) {
+            throw OnboardingException("Could not start a session. Try again in a moment.")
+        }
+        client.accessToken.set(token)
         ensureProfile(session.user?.id.orEmpty(), phone, name)
-        sessionManager.saveAuth(session.user?.id.orEmpty(), session.accessToken, session.refreshToken)
+        sessionManager.saveAuth(session.user?.id.orEmpty(), token, session.refreshToken)
         sessionManager.saveProfile(phone, name)
         sessionManager.completeOnboarding()
     }

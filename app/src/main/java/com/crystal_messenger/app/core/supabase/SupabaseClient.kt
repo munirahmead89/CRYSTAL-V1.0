@@ -2,6 +2,7 @@ package com.crystal_messenger.app.core.supabase
 
 import com.crystal_messenger.app.core.network.AuthSessionDto
 import com.crystal_messenger.app.core.network.CrystalJson
+import com.crystal_messenger.app.core.onboarding.OnboardingLogger
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -53,7 +54,7 @@ class SupabaseClient(
             put("password", password)
         }.toString()
         val res = api.signup(anonKey, body.toBody()).unwrap()
-        return CrystalJson.decodeFromString(AuthSessionDto.serializer(), res)
+        return decodeSession(res, "signup")
     }
 
     suspend fun logIn(email: String, password: String): AuthSessionDto {
@@ -62,7 +63,33 @@ class SupabaseClient(
             put("password", password)
         }.toString()
         val res = api.token(anonKey, "password", body.toBody()).unwrap()
-        return CrystalJson.decodeFromString(AuthSessionDto.serializer(), res)
+        return decodeSession(res, "login")
+    }
+
+    /**
+     * Decodes an auth response defensively. Some GoTrue setups answer signup
+     * with the bare user object (no session) or, on rate limiting/errors, with
+     * an array — neither is a usable session and both would otherwise surface
+     * as a cryptic parser message. Logs shape (never the token itself) and
+     * throws a clear, actionable error.
+     */
+    private fun decodeSession(res: String, op: String): AuthSessionDto {
+        val head = res.trimStart()
+        if (!head.startsWith("{")) {
+            OnboardingLogger.warn("auth $op returned non-object response: head=${head.take(120)} len=${res.length}")
+            throw RuntimeException(
+                "Unexpected response from the auth server ($op). Check your internet and try again."
+            )
+        }
+        return try {
+            CrystalJson.decodeFromString(AuthSessionDto.serializer(), res)
+        } catch (e: IllegalArgumentException) {
+            OnboardingLogger.warn("auth $op decode failed: ${e.message}")
+            throw RuntimeException(
+                "Unexpected response from the auth server ($op). Check your internet and try again.",
+                e
+            )
+        }
     }
 
     /**

@@ -13,12 +13,14 @@ val CrystalJson: Json = Json {
 
 @Serializable
 data class AuthSessionDto(
-    @SerialName("access_token") val accessToken: String,
+    @SerialName("access_token") val accessToken: String? = null,
     @SerialName("refresh_token") val refreshToken: String? = null,
     @SerialName("token_type") val tokenType: String = "bearer",
     @SerialName("expires_in") val expiresIn: Long? = null,
     val user: AuthUserDto? = null
-)
+) {
+    val hasSession: Boolean get() = !accessToken.isNullOrBlank()
+}
 
 @Serializable
 data class AuthUserDto(
