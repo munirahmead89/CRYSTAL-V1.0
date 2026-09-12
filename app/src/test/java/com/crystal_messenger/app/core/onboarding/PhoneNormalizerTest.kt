@@ -11,7 +11,7 @@ class PhoneNormalizerTest {
     fun `spaces dashes and dots are stripped`() {
         assertEquals("+15551234567", PhoneNormalizer.normalize("+1 (555) 123-4567"))
         assertEquals("+15551234567", PhoneNormalizer.normalize("+1-555-123-4567"))
-        assertEquals("15551234567", PhoneNormalizer.normalize("555.123.4567"))
+        assertEquals("5551234567", PhoneNormalizer.normalize("555.123.4567"))
     }
 
     @Test

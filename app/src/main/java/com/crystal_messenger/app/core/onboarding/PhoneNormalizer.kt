@@ -30,5 +30,5 @@ object PhoneNormalizer {
     }
 
     /** Pure digits — used for deterministic password/email derivation. */
-    fun digits(raw: String): String = normalize(raw)
+    fun digits(raw: String): String = normalize(raw).removePrefix("+")
 }
