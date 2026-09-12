@@ -25,15 +25,21 @@ class IncomingCallActivity : ComponentActivity() {
         val name = intent.getStringExtra(EXTRA_NAME) ?: "Unknown"
         val avatar = intent.getStringExtra(EXTRA_AVATAR)
 
+        var callerId = intent.getStringExtra("targetUserId") ?: ""
+        lifecycleScope.launch {
+            callerId = container.db.callDao().get(callId)?.callerId ?: callerId
+        }
+        val targetUserId = intent.getStringExtra("targetUserId") ?: ""
+
         setContent {
             CRYSTAL_MESSENGERTheme {
                 IncomingCallCard(
                     callId = callId,
                     name = name,
                     avatarUrl = avatar,
-                    onAnswer = {
+onAnswer = {
                         startActivity(
-                            CallActivity.incomingIntent(this, callId, name, avatar, "audio")
+                            CallActivity.incomingIntent(this, callId, name, avatar, "audio", callerId)
                         )
                         finish()
                     },

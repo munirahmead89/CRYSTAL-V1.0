@@ -41,7 +41,7 @@ class CallNotifier(
                 for (call in calls) {
                     if (call.status == "ringing" && call.calleeId == meId && call.id !in processed) {
                         processed += call.id
-                        showIncoming(call.id)
+                        showIncoming(call.id, call.callerId)
                     }
                 }
             }
@@ -52,7 +52,7 @@ class CallNotifier(
         scope.cancel()
     }
 
-    private suspend fun showIncoming(callId: String) = withContext(Dispatchers.Main) {
+    private suspend fun showIncoming(callId: String, callerId: String) = withContext(Dispatchers.Main) {
         ensureChannel()
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
             != PackageManager.PERMISSION_GRANTED
@@ -61,6 +61,7 @@ class CallNotifier(
         val activityIntent = Intent(context, IncomingCallActivity::class.java).apply {
             putExtra(IncomingCallActivity.EXTRA_CALL_ID, callId)
             putExtra(IncomingCallActivity.EXTRA_NAME, "Crystal call")
+            putExtra("targetUserId", callerId)
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
         val fullScreen = PendingIntent.getActivity(

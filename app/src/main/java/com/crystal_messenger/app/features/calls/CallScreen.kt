@@ -38,9 +38,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.crystal_messenger.app.di.AppContainer
 import com.crystal_messenger.app.ui.components.CrystalAvatar
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.serialization.json.jsonPrimitive
+import org.webrtc.VideoTrack
 
 @Composable
 fun CallScreen(
@@ -50,6 +54,8 @@ fun CallScreen(
     avatarUrl: String?,
     incoming: Boolean,
     kind: String,
+    webRtcManager: com.crystal_messenger.app.core.webrtc.WebRtcManager?,
+    signalingClient: com.crystal_messenger.app.core.webrtc.WebRtcSignalingClient?,
     onFinish: () -> Unit
 ) {
     val context = LocalContext.current
@@ -58,11 +64,39 @@ fun CallScreen(
     var speaker by remember { mutableStateOf(false) }
     var seconds by remember { mutableLongStateOf(0L) }
 
+    val localVideoTrack by (webRtcManager?.localVideoTrack ?: MutableStateFlow<VideoTrack?>(null)).collectAsStateWithLifecycle()
+    val remoteVideoTrack by (webRtcManager?.remoteVideoTrack ?: MutableStateFlow<VideoTrack?>(null)).collectAsStateWithLifecycle()
+
     LaunchedEffect(answered) {
         if (!answered) return@LaunchedEffect
+        if (!incoming) {
+            webRtcManager?.startCall()
+        }
         while (true) {
             delay(1000)
             seconds++
+        }
+    }
+
+    LaunchedEffect(signalingClient) {
+        signalingClient?.offers?.collect { offer ->
+            if (incoming) {
+                webRtcManager?.answerCall(offer["sdp"]?.jsonPrimitive?.content ?: "")
+            }
+        }
+    }
+    LaunchedEffect(signalingClient) {
+        signalingClient?.answers?.collect { answer ->
+            webRtcManager?.handleAnswer(answer["sdp"]?.jsonPrimitive?.content ?: "")
+        }
+    }
+    LaunchedEffect(signalingClient) {
+        signalingClient?.iceCandidates?.collect { ice ->
+            webRtcManager?.handleIceCandidate(
+                ice["sdpMid"]?.jsonPrimitive?.content ?: "",
+                ice["sdpMLineIndex"]?.jsonPrimitive?.content?.toInt() ?: 0,
+                ice["sdp"]?.jsonPrimitive?.content ?: ""
+            )
         }
     }
 
@@ -72,6 +106,50 @@ fun CallScreen(
             .background(Brush.verticalGradient(listOf(Color(0xFF0B141A), Color(0xFF10221A)))),
         contentAlignment = Alignment.Center
     ) {
+        if (kind == "video" && answered) {
+            // Remote Video Fullscreen
+            remoteVideoTrack?.let { track ->
+                androidx.compose.ui.viewinterop.AndroidView(
+                    factory = { ctx ->
+                        org.webrtc.SurfaceViewRenderer(ctx).apply {
+                            webRtcManager?.eglBaseContext?.let { eglContext ->
+                                init(eglContext, null)
+                            }
+                            setScalingType(org.webrtc.RendererCommon.ScalingType.SCALE_ASPECT_FILL)
+                            setEnableHardwareScaler(true)
+                            track.addSink(this)
+                        }
+                    },
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+            
+            // Local Video PIP
+            localVideoTrack?.let { track ->
+                Box(modifier = Modifier.fillMaxSize()) {
+                    androidx.compose.ui.viewinterop.AndroidView(
+                        factory = { ctx ->
+                            org.webrtc.SurfaceViewRenderer(ctx).apply {
+                                webRtcManager?.eglBaseContext?.let { eglContext ->
+                                    init(eglContext, null)
+                                }
+                                setScalingType(org.webrtc.RendererCommon.ScalingType.SCALE_ASPECT_FILL)
+                                setEnableHardwareScaler(true)
+                                setZOrderMediaOverlay(true)
+                                setMirror(true)
+                                track.addSink(this)
+                            }
+                        },
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(bottom = 120.dp, end = 16.dp)
+                            .width(100.dp)
+                            .height(150.dp)
+                            .clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
+                    )
+                }
+            }
+        }
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
             CrystalAvatar(url = avatarUrl, name = name, size = 132.dp, online = true)
             Spacer(Modifier.height(28.dp))
