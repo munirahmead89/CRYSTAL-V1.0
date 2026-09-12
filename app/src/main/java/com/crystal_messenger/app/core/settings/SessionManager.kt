@@ -45,15 +45,28 @@ class SessionManager(private val context: Context) {
 
     suspend fun current(): Session = session.first()
 
+    /**
+     * Non-suspending snapshot for sync call sites (logging, summaries).
+     * Kept in sync with the DataStore writes performed by this class.
+     */
+    @Volatile
+    private var snapshot: Session = Session()
+
+    fun cachedCurrent(): Session = snapshot
+
     suspend fun saveAuth(userId: String, accessToken: String, refreshToken: String?) {
+        snapshot = session.first().copy(userId = userId, accessToken = accessToken,
+            refreshToken = refreshToken ?: snapshot.refreshToken, onboarded = true)
         context.sessionDataStore.edit { prefs ->
             prefs[Keys.USER_ID] = userId
             prefs[Keys.ACCESS_TOKEN] = accessToken
             if (refreshToken != null) prefs[Keys.REFRESH_TOKEN] = refreshToken
+            prefs[Keys.ONBOARDED] = "1"
         }
     }
 
     suspend fun saveProfile(phone: String, name: String) {
+        snapshot = session.first().copy(phone = phone, name = name)
         context.sessionDataStore.edit { prefs ->
             prefs[Keys.PHONE] = phone
             prefs[Keys.NAME] = name
@@ -66,10 +79,12 @@ class SessionManager(private val context: Context) {
     }
 
     suspend fun completeOnboarding() {
+        snapshot = session.first().copy(onboarded = true)
         context.sessionDataStore.edit { prefs -> prefs[Keys.ONBOARDED] = "1" }
     }
 
     suspend fun clear() {
+        snapshot = Session()
         context.sessionDataStore.edit { it.clear() }
     }
 }

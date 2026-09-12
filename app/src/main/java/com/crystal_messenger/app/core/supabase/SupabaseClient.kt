@@ -65,6 +65,49 @@ class SupabaseClient(
         return CrystalJson.decodeFromString(AuthSessionDto.serializer(), res)
     }
 
+    /**
+     * Authoritative account-existence check against the Supabase database
+     * (users table), keyed by the canonical phone number only.
+     * Never consults local Room/session state.
+     * Fail-loud: a lookup error is surfaced, never misclassified as NEW.
+     */
+    suspend fun accountExistsByPhone(phone: String): Boolean =
+        selectOne("users", select = "id", filters = mapOf("phone" to "eq.$phone")) != null
+
+    /**
+     * Server-side DEVICE_BLOCKED state. Completely independent of account
+     * existence: a blocked device can have a fresh or existing phone alike.
+     * Parses PostgREST's scalar boolean responses ("t"/"f", "true"/"false").
+     */
+    suspend fun isDeviceBlocked(phone: String): Boolean = try {
+        rpcBool("is_device_blocked", buildJsonObject {
+            put("p_phone", JsonPrimitive(phone))
+        })
+    } catch (_: Exception) {
+        false
+    }
+
+    /** Robust boolean RPC: PostgREST returns scalars as text; content can be "t". */
+    suspend fun rpcBool(fn: String, payload: JsonObject): Boolean {
+        val raw = api.rpc(anonKey, authHeader(), fn, payload.toString().toBody())
+            .unwrap().trim()
+        return parseBoolean(raw)
+    }
+
+    private fun parseBoolean(raw: String): Boolean = when (raw.lowercase()) {
+        "t", "true", "1", "yes", "on" -> true
+        "f", "false", "0", "no", "off", "" -> false
+        else -> runCatching {
+            (CrystalJson.parseToJsonElement(raw) as? JsonPrimitive)
+                ?.content?.toBooleanStrictOrNull() ?: false
+        }.getOrDefault(false)
+    }
+
+    /** Invalidate the cached access token (logout). */
+    fun clearAuth() {
+        accessToken.set(null)
+    }
+
     suspend fun select(
         table: String,
         select: String = "*",

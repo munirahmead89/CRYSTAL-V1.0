@@ -42,9 +42,6 @@ class AppContainer private constructor(private val appContext: Context) {
     val supabaseClient: SupabaseClient = SupabaseClient(supabaseUrl, anonKey, supabaseApi)
     val realtime: RealtimeClient = RealtimeClient(supabaseUrl, anonKey, okHttpClient)
 
-    val authRepository = AuthRepository(supabaseClient, sessionManager)
-    val storageRepository = StorageRepository(supabaseClient, appContext)
-    val contactRepository = ContactRepository(appContext)
     val chatRepository = ChatRepository(
         api = supabaseClient,
         session = sessionManager,
@@ -57,6 +54,20 @@ class AppContainer private constructor(private val appContext: Context) {
         communityDao = db.communityDao()
     )
     val realtimeSynchronizer = RealtimeSynchronizer(chatRepository, realtime, sessionManager)
+
+    val authRepository = AuthRepository(
+        client = supabaseClient,
+        sessionManager = sessionManager,
+        onLoggedOut = {
+            // Invalidate Room isMe + cached account data and drop realtime
+            // subscriptions so a previous account can never leak into the next
+            // onboarding classification.
+            realtimeSynchronizer.stop()
+            chatRepository.clearLocalData()
+        }
+    )
+    val storageRepository = StorageRepository(supabaseClient, appContext)
+    val contactRepository = ContactRepository(appContext)
 
     companion object {
         @Volatile private var instance: AppContainer? = null

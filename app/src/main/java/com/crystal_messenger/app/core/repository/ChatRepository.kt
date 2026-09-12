@@ -50,6 +50,26 @@ class ChatRepository(
 
     suspend fun meId(): String = session.current().userId.orEmpty()
 
+    /**
+     * Logout cleanup for the local cache:
+     *  - reset the Room "isMe" marker,
+     *  - drop cached users so the next onboarding cannot read the old account
+     *    from Room,
+     *  - drop conversations/messages so the offline cache cannot re-surface the
+     *    previous account.
+     * This only runs on an explicit logout — NOT on every onboarding attempt.
+     */
+    suspend fun clearLocalData() {
+        userDao.clearIsMe()
+        userDao.clearUsers()
+        convDao.clearAll()
+        msgDao.clearAll()
+        memberDao.clearAll()
+        statusDao.clearAll()
+        callDao.clearAll()
+        communityDao.clearAll()
+    }
+
     suspend fun touchPresence(userId: String, status: String) {
         if (userId.isBlank()) return
         try {

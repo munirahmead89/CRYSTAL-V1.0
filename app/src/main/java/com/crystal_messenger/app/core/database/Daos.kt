@@ -32,6 +32,14 @@ interface UserDao {
 
     @Query("UPDATE users SET status = :status, lastSeen = :lastSeen WHERE id = :id")
     suspend fun updatePresence(id: String, status: String, lastSeen: Long)
+
+    /** Reset the local "me" marker so a previous account can never be mistaken for the current one. */
+    @Query("UPDATE users SET isMe = 0")
+    suspend fun clearIsMe()
+
+    /** Fully wipe cached user rows (account cache only — offline cache of other entities preserved). */
+    @Query("DELETE FROM users")
+    suspend fun clearUsers()
 }
 
 @Dao
@@ -54,6 +62,9 @@ interface ConversationDao {
     @Query("DELETE FROM conversations WHERE id = :id")
     suspend fun delete(id: String)
 
+    @Query("DELETE FROM conversations")
+    suspend fun clearAll()
+
     @Query("UPDATE conversations SET lastMessageText = :lastMessage, updatedAt = :updatedAt, lastMessageBy = :by WHERE id = :id")
     suspend fun updateBlurb(id: String, lastMessage: String, updatedAt: Long, by: String?)
 
@@ -74,6 +85,9 @@ interface MemberDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(list: List<ConversationMemberEntity>)
+
+    @Query("DELETE FROM conversation_members")
+    suspend fun clearAll()
 }
 
 @Dao
@@ -104,6 +118,9 @@ interface MessageDao {
 
     @Query("DELETE FROM messages WHERE id = :id")
     suspend fun delete(id: String)
+
+    @Query("DELETE FROM messages")
+    suspend fun clearAll()
 }
 
 @Dao
@@ -122,6 +139,9 @@ interface StatusDao {
 
     @Query("SELECT * FROM status_views WHERE statusId = :statusId")
     suspend fun viewsFor(statusId: String): List<StatusViewEntity>
+
+    @Query("DELETE FROM statuses")
+    suspend fun clearAll()
 }
 
 @Dao
@@ -134,6 +154,9 @@ interface CallDao {
 
     @Query("SELECT * FROM calls WHERE id = :id")
     suspend fun get(id: String): CallEntity?
+
+    @Query("DELETE FROM calls")
+    suspend fun clearAll()
 }
 
 @Dao
@@ -146,4 +169,7 @@ interface CommunityDao {
 
     @Query("SELECT * FROM communities WHERE id = :id")
     suspend fun get(id: String): CommunityEntity?
+
+    @Query("DELETE FROM communities")
+    suspend fun clearAll()
 }
