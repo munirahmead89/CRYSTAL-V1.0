@@ -36,7 +36,7 @@ class CallNotifier(
     fun start() {
         scope.launch {
             meId = container.sessionManager.current().userId
-            ensureChannel()
+            ensureChannel(context)
             container.db.callDao().observeAll().collect { calls ->
                 for (call in calls) {
                     if (call.status == "ringing" && call.calleeId == meId && call.id !in processed) {
@@ -53,7 +53,7 @@ class CallNotifier(
     }
 
     private suspend fun showIncoming(callId: String, callerId: String) = withContext(Dispatchers.Main) {
-        ensureChannel()
+        ensureChannel(context)
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
             != PackageManager.PERMISSION_GRANTED
         ) return@withContext
