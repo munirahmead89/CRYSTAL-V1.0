@@ -1,0 +1,26 @@
+# Template for android/key.properties. Copy to android/key.properties and fill in.
+#
+#   copy tools/key.properties.example android/key.properties
+#
+# android/key.properties is gitignored and must never be committed. Neither must
+# the keystore it points at.
+#
+# storeFile is resolved by Gradle relative to the android/app/ module directory,
+# so a file in android/ is reached as "../<name>.jks".
+storeFile=../play-upload.jks
+
+# The password for the keystore itself.
+storePassword=
+
+# The alias inside the keystore.
+keyAlias=upload
+
+# The password for that key. Often the same as storePassword.
+keyPassword=
+
+# Generate a new key with:
+#   keytool -genkey -v -keystore android/play-upload.jks -keyalg RSA -keysize 4096 -validity 10000 -alias upload
+#
+# Back the keystore up somewhere outside this repository. If it is lost, no
+# further update to this package name can ever be published: Android refuses
+# updates signed by a different key, so every existing install is stuck.

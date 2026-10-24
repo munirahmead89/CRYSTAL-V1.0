@@ -1,0 +1,43 @@
+# ============================================================================
+# Crystal Messenger — proxy fleet: nginx edge LB + Caddy reverse proxies.
+# Joins the 'crystal-supabase' network created by deploy/docker-compose.yml.
+# ============================================================================
+
+services:
+  lb:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "8443:8443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./upstreams.conf:/etc/nginx/upstreams.conf:ro
+      - ./tls:/etc/nginx/tls:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost/ >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - supabase
+      - default
+
+  # Load-balance across multiple replicas with:
+  #   docker compose up -d --scale caddy=3 --no-deps caddy
+  # and list each replica in proxy/upstreams.conf.
+  caddy:
+    image: caddy:2.8
+    restart: unless-stopped
+    environment:
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-http://localhost:8000}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+    networks:
+      - supabase
+      - default
+
+networks:
+  supabase:
+    external: true
+    name: crystal-supabase

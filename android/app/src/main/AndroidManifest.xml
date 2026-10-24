@@ -1,0 +1,191 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Core permissions -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+<!-- Microphone is for voice notes. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- Camera is for QR code scanning. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <!-- Background media transfer + periodic sync. On API 34+ a foreground
+         service that does dataSync MUST declare the matching subtype permission
+         or the WorkManager task throws SecurityException at startForeground(). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!-- Notifications. On API 33+ POST_NOTIFICATIONS is a runtime permission and
+         without it every notification (message alert, upload progress) is
+         silently dropped by the system. Mandatory for targetSdk 33+. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <!-- Biometric app lock (local_auth). -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+
+    <!-- Reading media the user picks to send, and saving received media to the
+         public Downloads folder. Split by API level: the granular READ_MEDIA_*
+         group on 33+, the legacy single permission on <=32. Both are runtime
+         permissions and are requested through permission_handler on demand. -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+    <!-- Android 14 (API 34) partial photo/video access: the user may grant
+         access to only some items in the picker. Without this the system shows
+         "Allow access to all photos" style blocking dialogs. -->
+    <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" />
+    <!-- Writing to the public Downloads collection only exists up to API 28;
+         API 29+ uses MediaStore (no permission) for the Downloads collection. -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
+
+    <!-- Camera is optional: the app must stay installable and usable on
+         devices without a camera (Play filtering). Runtime access is still
+         requested before scanning. -->
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+    <!-- Microphone is optional for the same reason (voice notes). -->
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
+
+    <!-- Wi-Fi + SIM access used by Settings → Storage & network (IP, network
+         name, operator). RESTRICTED permissions are always runtime-gated via
+         permission_handler before the native channel is consulted.
+
+         REMOVED: READ_PHONE_STATE. It existed only to render the carrier name
+         in settings, which has been taken out. Dropping it removes a
+         Play-Store "Sensitive permission" declaration for information the user
+         already knows and the app never needed.
+
+         ACCESS_WIFI_STATE was dropped with it: the Wi-Fi network name is gone,
+         and retrieving an SSID additionally required a location permission
+         that was never declared, so the row could only ever have read
+         "Permission not granted". -->
+    <application
+        android:label="Crystal Messenger"
+        android:name="${applicationName}"
+        android:icon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="false"
+        android:allowBackup="false"
+        android:networkSecurityConfig="@xml/network_security_config">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:taskAffinity=""
+            android:theme="@style/LaunchTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize">
+            <!-- Specifies an Android theme to apply to this Activity as soon as
+                 the Android process has started. This theme is visible to the user
+                 while the Flutter UI initializes. After that, this theme continues
+                 to determine the Window background behind the Flutter UI. -->
+            <meta-data
+              android:name="io.flutter.embedding.android.NormalTheme"
+              android:resource="@style/NormalTheme"
+              />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <data android:mimeType="text/plain"/>
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <data android:mimeType="image/*"/>
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <data android:mimeType="video/*"/>
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <data android:mimeType="audio/*"/>
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <data android:mimeType="*/*"/>
+            </intent-filter>
+        </activity>
+        <!-- Don't delete the meta-data below.
+             This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2" />
+
+        <!-- A general-purpose content:// provider for media this app hands to
+             other apps. NOT the provider used for the share sheet: share_plus
+             ships and registers its own (${applicationId}.flutter.share_provider)
+             which only exposes <cache>/share_plus/, so MediaActions stages a
+             copy there before sharing. This one exists so the app can issue a
+             content:// URI for files it holds in its own cache without copying
+             them first. Databases and the secure-storage backing files are
+             deliberately NOT exposed: a content:// grant is a capability. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+    </application>
+    <!-- Required to query activities that can process text, see:
+         https://developer.android.com/training/package-visibility and
+         https://developer.android.com/reference/android/content/Intent#ACTION_PROCESS_TEXT.
+
+         In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN"/>
+            <category android:name="android.intent.category.LAUNCHER"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.SEND"/>
+            <data android:mimeType="text/plain"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.SEND"/>
+            <data android:mimeType="image/*"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.SEND"/>
+            <data android:mimeType="video/*"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.SEND"/>
+            <data android:mimeType="audio/*"/>
+        </intent>
+        <!-- Package visibility (Android 11+). Without these the app cannot see
+             any installed player/gallery, so "Play in" and "Share to" resolve
+             to an empty sheet even though a valid target exists. -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:mimeType="video/*"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:mimeType="audio/*"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:mimeType="image/*"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.GET_CONTENT"/>
+            <data android:mimeType="*/*"/>
+        </intent>
+    </queries>
+</manifest>

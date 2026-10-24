@@ -1,0 +1,257 @@
+# ============================================================================
+# Crystal Messenger — self-hosted Supabase stack (Docker Compose).
+#
+# "Everything enabled" for the database capabilities shipped in
+# supabase/migrations/00001..00009:
+#   * Default email + password sign-up ......... EMAIL_SIGNUP_ENABLED
+#   * Anonymous guest sign-in .................. ANONYMOUS_SIGNIN_ENABLED
+#   * RLS + Realtime + Storage + Edge Functions wired through Kong.
+#
+# Usage:  copy .env.example -> .env, fill secrets, then:
+#   docker compose -f deploy/docker-compose.yml up -d
+#   ./deploy/apply.sh            # runs migrations + GUC settings + pg_net check
+# ============================================================================
+
+services:
+  db:
+    image: supabase/postgres:${POSTGRES_IMAGE_TAG:-15.8.1.169}
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: postgres
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXP: ${JWT_EXP:-3600}
+      ANON_KEY: ${ANON_KEY}
+      SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY}
+    command:
+      - postgres
+      - -c
+      - wal_level=logical
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -h localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./volumes/db/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+
+  auth:
+    image: supabase/gotrue:v2.180.0
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:${POSTGRES_PASSWORD}@db:5432/postgres
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: 9999
+      GOTRUE_SITE_URL: ${SITE_URL}
+      GOTRUE_URI_ALLOW_LIST: ${ADDITIONAL_REDIRECT_URLS:-http://localhost:5173}
+      GOTRUE_JWT_SECRET: ${JWT_SECRET}
+      GOTRUE_JWT_EXP: ${JWT_EXP:-3600}
+      GOTRUE_JWT_AUD: authenticated
+      # --- The three switches that make sign-up + anonymous + email work ---
+      GOTRUE_ENABLE_SIGNUP: ${AUTH_ENABLED:-true}
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: ${EMAIL_SIGNUP_ENABLED:-true}
+      GOTRUE_EXTERNAL_ANONYMOUS_USERS_ENABLED: ${ANONYMOUS_SIGNIN_ENABLED:-true}
+      GOTRUE_MAILER_AUTOCONFIRM: ${EMAIL_AUTOCONFIRM:-true}
+      GOTRUE_DISABLE_SIGNUP: "false"
+      GOTRUE_MAILER_URLPATHS_INVITE: /auth/v1/verify
+      GOTRUE_MAILER_URLPATHS_CONFIRMATION: /auth/v1/verify
+      GOTRUE_MAILER_URLPATHS_RECOVERY: /auth/v1/verify
+      GOTRUE_SMTP_ADMIN_EMAIL: admin@crystal.local
+      GOTRUE_SMTP_HOST: ${SMTP_HOST:-in-v3.mailjet.com}
+      GOTRUE_SMTP_PORT: ${SMTP_PORT:-587}
+      GOTRUE_SMTP_USER: ${SMTP_USER:-}
+      GOTRUE_SMTP_PASS: ${SMTP_PASS:-}
+      GOTRUE_SECURITY_CAPTCHA_ENABLED: "false"
+      GOTRUE_EXTERNAL_PHONE_ENABLED: "false"
+      GOTRUE_EXTERNAL_EMAIL_AUTHORIZED_ADDRESSES: ${EMAIL_AUTHORIZED_ADDRESSES:-}
+    ports:
+      - "9999:9999"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:9999/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  rest:
+    image: postgrest/postgrest:v12.2.8
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGRST_DB_URI: postgres://authenticator:${POSTGRES_PASSWORD}@db:5432/postgres
+      PGRST_DB_SCHEMAS: public,storage,graphql_public
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_JWT_SECRET: ${JWT_SECRET}
+      PGRST_DB_USE_LEGACY_GUCS: "false"
+      PGRST_APP_SETTINGS_JWT_SECRET: ${JWT_SECRET}
+    ports:
+      - "3001:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  realtime:
+    image: supabase/realtime:v2.30.14
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PORT: 4000
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: supabase_realtime_admin
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_NAME: postgres
+      DB_AFTER_CONNECT_QUERY: 'SET search_path TO _realtime'
+      DB_ENC_KEY: supabase-realtime
+      API_JWT_SECRET: ${JWT_SECRET}
+      SECRET_KEY_BASE: ${JWT_SECRET}
+      ERL_AFLAGS: -proto_dist inet_tcp
+      ENABLE_TAILSCALE: "false"
+      DNS_NODES: ""
+      RSERVER_DB_AFTER_CONNECT_QUERY: 'SET search_path TO _realtime'
+    ports:
+      - "4000:4000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:4000/health || echo unhealthy > /tmp/h; curl -sf http://localhost:4000/health >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  storage:
+    image: supabase/storage-api:v1.14.3
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ANON_KEY: ${ANON_KEY}
+      SERVICE_KEY: ${SERVICE_ROLE_KEY}
+      DATABASE_URL: postgres://supabase_storage_admin:${POSTGRES_PASSWORD}@db:5432/postgres
+      PGRST_JWT_SECRET: ${JWT_SECRET}
+      PGRST_URL: http://rest:3000
+      FILE_SIZE_LIMIT: 52428800
+      STORAGE_BACKEND: file
+      FILE_STORAGE_BACKEND_PATH: /var/lib/storage
+      TENANT_ID: stub
+      REGION: stub
+      GLOBAL_S3_BUCKET: stub
+      ENABLE_IMAGE_TRANSFORMATION: "true"
+      IMGPROXY_URL: http://imgproxy:3002
+    ports:
+      - "5000:5000"
+    volumes:
+      - storage_data:/var/lib/storage
+
+  imgproxy:
+    image: darthsim/imgproxy:v3.8.0
+    restart: unless-stopped
+    environment:
+      IMGPROXY_BIND: ":3002"
+      IMGPROXY_USE_ETAG: "true"
+      IMGPROXY_ENABLE_WEBP_DETECTION: "true"
+    ports:
+      - "3002:3002"
+
+  edge-runtime:
+    image: supabase/edge-runtime:v1.63.0
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      JWT_SECRET: ${JWT_SECRET}
+      SUPABASE_URL: ${PUBLIC_ORIGIN:-http://localhost:8000}
+      SUPABASE_ANON_KEY: ${ANON_KEY}
+      SUPABASE_SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY}
+      # FCM server key for send-push (Google Cloud console -> legacy server key)
+      FCM_SERVER_KEY: ${FCM_SERVER_KEY:-}
+      # Any Crystal-managed DB-side secrets the functions need:
+      CRYSTAL_SUPABASE_URL: ${PUBLIC_ORIGIN:-http://localhost:8000}
+      CRYSTAL_SUPABASE_ANON_KEY: ${ANON_KEY}
+    volumes:
+      - ../supabase/functions:/home/deno/functions:ro
+    command:
+      - start
+      - --main-service
+      - /home/deno/functions/main
+    ports:
+      - "8081:8081"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8081/functions/v1/app-config >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  meta:
+    image: supabase/postgres-meta:v0.84.12
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PG_META_PORT: 8080
+      PG_META_DB_HOST: db
+      PG_META_DB_PORT: 5432
+      PG_META_DB_NAME: postgres
+      PG_META_DB_USER: supabase_admin
+      PG_META_DB_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "8080:8080"
+
+  studio:
+    image: supabase/studio:20250910-1f8a2c43
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      STUDIO_PG_META_URL: http://meta:8080
+      SUPABASE_URL: ${PUBLIC_ORIGIN:-http://localhost:8000}
+      SUPABASE_PUBLIC_URL: ${PUBLIC_ORIGIN:-http://localhost:8000}
+      SUPABASE_ANON_KEY: ${ANON_KEY}
+      SUPABASE_SERVICE_KEY: ${SERVICE_ROLE_KEY}
+      AUTH_JWT_SECRET: ${JWT_SECRET}
+      LOGFLARE_API_KEY: not-used
+      LOGFLARE_URL: http://analytics:4001
+      NEXT_PUBLIC_ENABLE_LOGS: "false"
+    ports:
+      - "${STUDIO_PORT:-8082}:3000"
+
+  kong:
+    image: supabase/kong:v2.43.5
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /home/kong/kong.yml
+      KONG_DNS_ORDER: LAST,A,CNAME
+      KONG_PLUGINS: request-transformer,cors,key-auth,acl
+      KONG_DECLARATIVE_SETTINGS_BOOTSTRAP: "false"
+    volumes:
+      - ./kong.yml:/home/kong/kong.yml:ro
+    ports:
+      - "8000:8000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+networks:
+  default:
+    name: crystal-supabase
+
+volumes:
+  db_data:
+  storage_data:

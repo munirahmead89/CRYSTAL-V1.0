@@ -1,0 +1,59 @@
+# ============================================================================
+# Crystal Messenger — Caddy reverse proxy (TLS, limits, filtering) in front
+# of Kong. Terminates HTTPS and forwards one origin to the Supabase stack.
+# The nginx edge (proxy/nginx.conf) load-balances across N replicas of this
+# Caddy image for multi-node setups.
+# ============================================================================
+
+# Internet-facing origin. Terminates TLS here; everything internal is HTTP.
+{$PUBLIC_ORIGIN:-http://localhost:8000} {
+	encode zstd gzip
+
+	# Conservative request shaper so bursts never starve the backend.
+	rate_limit {
+		zone crystal_global 1m
+		events 200
+		window 1s
+		key {remote_host}
+	}
+
+	# --- API surface ---------------------------------------------------------
+	handle /auth/* {
+		reverse_proxy kong:8000
+	}
+	handle /rest/* {
+		reverse_proxy kong:8000
+	}
+	handle /storage/* {
+		reverse_proxy kong:8000
+	}
+	handle /functions/* {
+		reverse_proxy kong:8000
+	}
+	handle /realtime/* {
+		# WebSocket (Realtime) - keep connection upgrades intact.
+		header_up -Connection
+		reverse_proxy kong:8000 {
+			flush_interval -1
+		}
+	}
+
+	# --- Everything else (Studio / admin) ------------------------------------
+	handle {
+		reverse_proxy kong:8000
+	}
+
+	# Security headers on every response.
+	header {
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		X-Frame-Options "SAMEORIGIN"
+	}
+}
+
+# Local dev alternative, plain HTTP on 8000 when PUBLIC_ORIGIN is not set.
+:8000 {
+	handle {
+		reverse_proxy kong:8000
+	}
+}

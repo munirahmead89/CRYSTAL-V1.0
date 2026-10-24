@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Paths exposed by Crystal Messenger's FileProvider.
+
+  Two roots are needed:
+   * cache-path  - chunked media is assembled in the cache dir first
+     (media_transfer/assembled/...), because the cache dir is the only location
+     on Android the app can always write without a user-facing permission.
+     This is what powers "Share" / "Forward" of a received video or voice note.
+   * external-path - files the user explicitly saved to shared storage via
+     MediaStore and that live under the app's own external files dir.
+
+  Deliberately NOT exposed: the databases dir (auth tokens, chat cache) and the
+  secure-storage backing files. A content:// grant is a capability, so keeping
+  the surface to media-only prevents a share intent from leaking anything else.
+-->
+<paths>
+    <cache-path
+        name="media"
+        path="media_transfer/" />
+    <external-path
+        name="shared_media"
+        path="." />
+</paths>
