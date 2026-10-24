@@ -1,0 +1,70 @@
+workflows:
+  crystal_android:
+    name: Crystal Messenger Android
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      flutter: stable
+      groups:
+        - supabase
+        - android_signing
+      vars:
+        APP_ENV: production
+        APP_NAME: Crystal Messenger
+        APP_LOG_VERBOSITY: info
+      android_signing:
+        - crystal_keystore
+    scripts:
+      - name: Get Flutter packages
+        script: flutter pub get
+      - name: Analyze Flutter project
+        script: flutter analyze
+      - name: Run Flutter tests
+        script: flutter test
+      - name: Build Android app bundle
+        script: |
+          flutter build appbundle --release \
+            --dart-define=APP_ENV=$APP_ENV \
+            --dart-define=APP_NAME="$APP_NAME" \
+            --dart-define=APP_LOG_VERBOSITY=$APP_LOG_VERBOSITY \
+            --dart-define=SUPABASE_URL=$SUPABASE_URL \
+            --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY
+      - name: Build Android APK
+        script: |
+          flutter build apk --release \
+            --dart-define=APP_ENV=$APP_ENV \
+            --dart-define=APP_NAME="$APP_NAME" \
+            --dart-define=APP_LOG_VERBOSITY=$APP_LOG_VERBOSITY \
+            --dart-define=SUPABASE_URL=$SUPABASE_URL \
+            --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY
+    artifacts:
+      - build/app/outputs/bundle/release/*.aab
+      - build/app/outputs/flutter-apk/*.apk
+      - build/**/outputs/**/mapping.txt
+  crystal_ios:
+    name: Crystal Messenger iOS
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      flutter: stable
+      groups:
+        - supabase
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.munirwaheed.crystal.crystalMessenger
+    scripts:
+      - name: Get Flutter packages
+        script: flutter pub get
+      - name: Analyze Flutter project
+        script: flutter analyze
+      - name: Run Flutter tests
+        script: flutter test
+      - name: Build iOS IPA
+        script: |
+          flutter build ipa --release \
+            --dart-define=APP_ENV=production \
+            --dart-define=APP_NAME="Crystal Messenger" \
+            --dart-define=SUPABASE_URL=$SUPABASE_URL \
+            --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY
+    artifacts:
+      - build/ios/ipa/*.ipa
