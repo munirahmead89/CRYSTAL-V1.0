@@ -1,0 +1,105 @@
+name: Flutter builds
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+env:
+  APP_ENV: production
+  APP_NAME: Crystal Messenger
+  APP_LOG_VERBOSITY: info
+  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+
+jobs:
+  android:
+    name: Android APK and AAB
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Test
+        run: flutter test
+
+      - name: Build APK
+        run: >-
+          flutter build apk --release
+          --dart-define=APP_ENV=$APP_ENV
+          --dart-define=APP_NAME="$APP_NAME"
+          --dart-define=APP_LOG_VERBOSITY=$APP_LOG_VERBOSITY
+          --dart-define=SUPABASE_URL=$SUPABASE_URL
+          --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY
+
+      - name: Build AAB
+        run: >-
+          flutter build appbundle --release
+          --dart-define=APP_ENV=$APP_ENV
+          --dart-define=APP_NAME="$APP_NAME"
+          --dart-define=APP_LOG_VERBOSITY=$APP_LOG_VERBOSITY
+          --dart-define=SUPABASE_URL=$SUPABASE_URL
+          --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY
+
+      - name: Upload Android artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-android
+          path: |
+            build/app/outputs/flutter-apk/*.apk
+            build/app/outputs/bundle/release/*.aab
+
+  ios:
+    name: iOS unsigned build
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Test
+        run: flutter test
+
+      - name: Build unsigned iOS app
+        run: >-
+          flutter build ios --release --no-codesign
+          --dart-define=APP_ENV=$APP_ENV
+          --dart-define=APP_NAME="$APP_NAME"
+          --dart-define=APP_LOG_VERBOSITY=$APP_LOG_VERBOSITY
+          --dart-define=SUPABASE_URL=$SUPABASE_URL
+          --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY
+
+      - name: Package unsigned iOS app
+        run: ditto -c -k --sequesterRsrc --keepParent build/ios/iphoneos/Runner.app crystal-ios-unsigned.zip
+
+      - name: Upload iOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-ios-unsigned
+          path: crystal-ios-unsigned.zip
