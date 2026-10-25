@@ -289,12 +289,16 @@ class _MediaViewerPageState extends State<MediaViewerPage>
   }
 
   Widget _bottomBar(BuildContext context, ChatMessage message) {
-    return switch (message.type) {
-      'voice' => _VoiceControls(message: message),
-      'video' => _VideoControlsOverlay(message: message),
-      'audio' => _AudioPlayer(message: message),
-      _ => _ImageCaption(message: message),
-    };
+    switch (message.type) {
+      case 'voice':
+        return _VoiceControls(message: message);
+      case 'video':
+        return _VideoControlsOverlay(message: message);
+      case 'audio':
+        return _AudioPlayer(message: message);
+      default:
+        return _ImageCaption(message: message);
+    }
   }
 }
 
@@ -308,7 +312,7 @@ abstract final class CrystalColorsFallback {
 ///
 /// Plays the audio associated with the message and provides play/pause controls.
 /// Designed to be used inside [MediaViewerPage] via [_bottomBar].
-class _AudioPlayer extends ConsumerWidget {
+class _AudioPlayer extends StatelessWidget {
   const _AudioPlayer({
     required this.message,
   });
@@ -316,7 +320,7 @@ class _AudioPlayer extends ConsumerWidget {
   final ChatMessage message;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
       color: theme.colorScheme.surface,
@@ -341,7 +345,7 @@ class _AudioPlayer extends ConsumerWidget {
           const SizedBox(height: 24),
           _CircleButton(
             icon: Icons.close,
-            onTap: _dismiss,
+            onTap: () => Navigator.of(context).pop(),
             tooltip: 'Close',
           ),
           const SizedBox(height: 24),
@@ -350,9 +354,6 @@ class _AudioPlayer extends ConsumerWidget {
     );
   }
 }
-
-/// Fades and slides chrome in sync with the content.
-class _AnimatedChrome extends StatelessWidget {
 
 /// Fades and slides chrome in sync with the content.
 class _AnimatedChrome extends StatelessWidget {
@@ -593,7 +594,7 @@ class _VideoStageState extends State<_VideoStage> {
       // widget in the tree. Exactly one video is ever on screen, so a static
       // slot needs no routing.
       _VideoControlsOverlayState.attach(controller);
-    } catch (error) {
+    } catch (_) {
       if (mounted) {
         setState(() => error = 'Could not play this video.');
       }
@@ -663,12 +664,12 @@ class _VideoControlsOverlayState extends State<_VideoControlsOverlay>
     with SingleTickerProviderStateMixin {
   /// Holds the player for whichever video is currently on screen. Exactly one
   /// is alive at a time, so a static slot is enough and costs no routing.
-  VideoPlayerController? attached;
+  static VideoPlayerController? _attached;
 
-  void attach(VideoPlayerController controller) =>
-      attached = controller;
+  static void attach(VideoPlayerController controller) =>
+      _attached = controller;
 
-  VideoPlayerController? get _player => attached;
+  VideoPlayerController? get _player => _attached;
 
   Timer? ticker;
 
@@ -1011,7 +1012,7 @@ class VoicePlayerControllerScope extends InheritedWidget {
 
   final VoicePlayerController controller;
 
-  VoicePlayerController of(BuildContext context) {
+  static VoicePlayerController of(BuildContext context) {
     final scope = context
         .dependOnInheritedWidgetOfExactType<VoicePlayerControllerScope>();
     assert(scope != null, 'No VoicePlayerControllerScope in this subtree');
